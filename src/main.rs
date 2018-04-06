@@ -85,6 +85,8 @@ struct ResponseMessage {
 
 #[post("/hello", format = "application/json", data = "<event>")]
 fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
+    println!("{:?}", &event.0);
+
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
