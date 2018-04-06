@@ -90,7 +90,7 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
-                text: format!("Hello and thanks for adding me, {}. For help type !help", event.0.user.display_name),
+                text: format!("Hello and thanks for adding me, *{}*. For help type `!help`", event.0.user.display_name),
             })
         }
         "MESSAGE" => {
@@ -120,6 +120,6 @@ fn main() {
 fn parse_text(text: String, display_name: String) -> String {
     return match text.trim() {
         "!help" => "Not implemented yet".to_string(),
-        _ => format!("Did not quite catch that, {}, type !help for help", display_name)
+        _ => format!("Did not quite catch that, *{}*, type `!help` for help", display_name)
     }
 }
