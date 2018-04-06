@@ -1,0 +1,66 @@
+#![feature(plugin, decl_macro)]
+#![plugin(rocket_codegen)]
+
+extern crate rocket;
+#[macro_use] extern crate rocket_contrib;
+#[macro_use] extern crate serde_derive;
+
+use rocket_contrib::{Json, Value};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct RequestMessage {
+    //type: String,
+    token: String,
+    event_time: String,
+    space: Space,
+    message: Message
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Space {
+    name: String,
+    displayName: String,
+    //type: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Sender {
+    name: String,
+    displayName: String,
+    avatarUrl: String,
+    email: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Thread {
+    name: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Message {
+    name: String,
+    sender: Sender,
+    createTime: String,
+    text: String,
+    thread: Thread
+}
+
+#[derive(Serialize, Deserialize)]
+struct ResponseMessage {
+    text: String
+}
+
+#[post("/hello", format = "application/json", data = "<message>")]
+fn post_json(message: Json<RequestMessage>) -> Json<ResponseMessage> {
+    //println!("{:?}", message.0);
+    Json(ResponseMessage { text: "Būk pasveikintas!".to_string() })
+}
+
+#[get("/")]
+fn moo() -> &'static str {
+    "Mooo, from Uboontoo!"
+}
+
+fn main() {
+    rocket::ignite().mount("/", routes![post_json, moo]).launch();
+}
