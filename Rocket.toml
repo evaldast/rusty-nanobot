@@ -5,12 +5,5 @@ workers = 1
 keep_alive = 5
 log = "normal"
 
-[staging]
-address = "192.168.0.101"
-port = 1337
-workers = 4
-keep_alive = 5
-log = "normal"
-
 
 

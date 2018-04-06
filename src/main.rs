@@ -2,10 +2,13 @@
 #![plugin(rocket_codegen)]
 
 extern crate rocket;
-#[macro_use] extern crate rocket_contrib;
-#[macro_use] extern crate serde_derive;
 
-use rocket_contrib::{Json, Value};
+extern crate rocket_contrib;
+
+#[macro_use]
+extern crate serde_derive;
+
+use rocket_contrib::Json;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Event {
@@ -16,7 +19,7 @@ struct Event {
     event_time: String,
 
     #[serde(default)]
-    message: Message,    
+    message: Message,
 
     space: Space,
     token: String,
@@ -24,7 +27,7 @@ struct Event {
     #[serde(rename = "type")]
     event_type: String,
 
-    user: Sender
+    user: Sender,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -32,7 +35,7 @@ struct Space {
     name: String,
 
     #[serde(rename = "type")]
-    message_type: String
+    message_type: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -45,9 +48,9 @@ struct Sender {
 
     email: String,
     name: String,
-    
+
     #[serde(rename = "type")]
-    sender_type: String       
+    sender_type: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -55,12 +58,12 @@ struct Thread {
     name: String,
 
     #[serde(rename = "retentionSettings")]
-    retention_settings: RetentionSettings
+    retention_settings: RetentionSettings,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct RetentionSettings {
-    state: String
+    state: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -72,28 +75,33 @@ struct Message {
     sender: Sender,
     space: Space,
     text: String,
-    thread: Thread
+    thread: Thread,
 }
 
-//impl Default for Message {
-//    fn default() -> Message { Message::new() }
-//}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 struct ResponseMessage {
-    text: String
+    text: String,
 }
 
 #[post("/hello", format = "application/json", data = "<event>")]
 fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     match event.0.event_type.trim() {
-       "ADDED_TO_SPACE" => return  Json(ResponseMessage { text: "Thanks for adding me, ".to_string() + &event.0.user.display_name }),
-       "MESSAGE" => return  Json(ResponseMessage { text: "Thanks for messaging me, ".to_string() + &event.0.user.display_name }),
-       _ => Json(ResponseMessage { text: "Sorry, did not understand that".to_string() }) 
+        "ADDED_TO_SPACE" => {
+            return Json(ResponseMessage {
+                text: "Hello and thanks for adding me, ".to_string() + &event.0.user.display_name,
+            })
+        }
+        "MESSAGE" => {
+            return Json(ResponseMessage {
+                text: "Thanks for messaging me, ".to_string() + &event.0.user.display_name,
+            })
+        }
+        _ => {
+            return Json(ResponseMessage {
+                text: "Sorry, did not understand that".to_string(),
+            })
+        }
     };
-
-    println!("{:?}", event.0);
-    Json(ResponseMessage { text: "Būk pasveikintas, ".to_string() + &event.0.user.display_name })
 }
 
 #[get("/")]
@@ -102,9 +110,7 @@ fn moo() -> &'static str {
 }
 
 fn main() {
-    rocket::ignite().mount("/", routes![post_json, moo]).launch();
-}
-
-fn default_resource() -> String {
-    String::new()
+    rocket::ignite()
+        .mount("/", routes![post_json, moo])
+        .launch();
 }
