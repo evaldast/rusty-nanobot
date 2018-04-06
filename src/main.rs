@@ -90,17 +90,17 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
-                text: "Hello and thanks for adding me, ".to_string() + &event.0.user.display_name,
+                text: "Hello and thanks for adding me, ".to_string() + &event.0.user.display_name + ". For help type !help",
             })
         }
         "MESSAGE" => {
             return Json(ResponseMessage {
-                text: "Thanks for messaging me, ".to_string() + &event.0.user.display_name,
+                text: parse_text(event.0.message.text).to_string()
             })
         }
         _ => {
             return Json(ResponseMessage {
-                text: "Sorry, did not understand that".to_string(),
+                text: "Unsupported event".to_string(),
             })
         }
     };
@@ -115,4 +115,11 @@ fn main() {
     rocket::ignite()
         .mount("/", routes![post_json, moo])
         .launch();
+}
+
+fn parse_text<'text>(text: String) -> &'text str {
+    return match text.trim() {
+        "!help" => "Not implemented yet",
+        _ => "Did not quite catch that, type !help for help"
+    }
 }
