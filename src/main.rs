@@ -10,7 +10,7 @@ extern crate serde_derive;
 
 use rocket_contrib::Json;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct Event {
     #[serde(rename = "configCompleteRedirectUrl", default)]
     config_complete_redirect_url: String,
@@ -30,7 +30,7 @@ struct Event {
     user: Sender,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default)]
 struct Space {
     name: String,
 
@@ -38,7 +38,7 @@ struct Space {
     message_type: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default)]
 struct Sender {
     #[serde(rename = "avatarUrl")]
     avatar_url: String,
@@ -53,7 +53,7 @@ struct Sender {
     sender_type: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default)]
 struct Thread {
     name: String,
 
@@ -61,12 +61,12 @@ struct Thread {
     retention_settings: RetentionSettings,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default)]
 struct RetentionSettings {
     state: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default)]
 struct Message {
     #[serde(rename = "createTime")]
     create_time: String,
