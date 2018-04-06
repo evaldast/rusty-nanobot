@@ -90,12 +90,12 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
-                text: "Hello and thanks for adding me, ".to_string() + &event.0.user.display_name + ". For help type !help",
+                text: format!("Hello and thanks for adding me, {}. For help type !help", event.0.user.display_name),
             })
         }
         "MESSAGE" => {
             return Json(ResponseMessage {
-                text: parse_text(event.0.message.text).to_string()
+                text: parse_text(event.0.message.text, event.0.user.display_name)
             })
         }
         _ => {
@@ -117,9 +117,9 @@ fn main() {
         .launch();
 }
 
-fn parse_text<'text>(text: String) -> &'text str {
+fn parse_text(text: String, display_name: String) -> String {
     return match text.trim() {
-        "!help" => "Not implemented yet",
-        _ => "Did not quite catch that, type !help for help"
+        "!help" => "Not implemented yet".to_string(),
+        _ => format!("Did not quite catch that, {}, type !help for help", display_name)
     }
 }
