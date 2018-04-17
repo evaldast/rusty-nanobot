@@ -5,10 +5,13 @@ extern crate rocket;
 
 extern crate rocket_contrib;
 
+extern crate reqwest;
+
 #[macro_use]
 extern crate serde_derive;
 
 use rocket_contrib::Json;
+use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -87,6 +90,17 @@ struct ResponseMessage {
 fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     println!("{:?}", &event.0);
 
+    let mut map = HashMap::new();
+    map.insert("action", "block_count");
+
+    let client = reqwest::Client::new();
+
+    let res = client.post("127.0.0.1:7076")
+        .json(&map)
+        .send();
+
+    println!("{:?}", res);    
+
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
@@ -120,6 +134,6 @@ fn main() {
 fn parse_text(text: String, display_name: String) -> String {
     return match text.trim() {
         "!help" => "Not implemented yet".to_string(),
-        _ => format!("Did not quite catch that, *{}*, type `!help` for help", display_name)
+        _ => format!("Did not quite catch that, * {} *, type `!help` for help", display_name)
     }
 }
