@@ -9,7 +9,9 @@ rocket_codegen = "0.3.6"
 serde_derive = "1.0.36"
 serde = "1.0"
 serde_json = "1.0"
-reqwest = "0.8.5"
+futures = "0.1"
+hyper = "0.11"
+tokio-core = "0.1"
 
 [dependencies.rocket_contrib]
 version = "*"

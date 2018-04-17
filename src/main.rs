@@ -2,16 +2,22 @@
 #![plugin(rocket_codegen)]
 
 extern crate rocket;
-
 extern crate rocket_contrib;
-
-extern crate reqwest;
+extern crate futures;
+extern crate hyper;
+extern crate tokio_core;
 
 #[macro_use]
 extern crate serde_derive;
 
 use rocket_contrib::Json;
-use std::collections::HashMap;
+use hyper::{Method, Request};
+use hyper::header::{ContentLength, ContentType};
+use hyper::Client;
+use futures::{Future, Stream};
+use tokio_core::reactor::Core;
+use std::str;
+use std::error::Error;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -90,16 +96,7 @@ struct ResponseMessage {
 fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     println!("{:?}", &event.0);
 
-    let mut map = HashMap::new();
-    map.insert("action", "block_count");
-
-    let client = reqwest::Client::new();
-
-    let res = client.post("127.0.0.1:7076")
-        .json(&map)
-        .send();
-
-    println!("{:?}", res);    
+    call_wallet();
 
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
@@ -125,6 +122,30 @@ fn moo() -> &'static str {
     "Mooo, from Uboontoo!"
 }
 
+fn call_wallet() -> Result<(), Box<Error>> {
+    let mut core = Core::new()?;
+    let client = Client::new(&core.handle());
+
+    let json = r#"{"action":"block_count"}"#;
+    let uri = "http://127.0.0.1:7076".parse()?;
+    let mut req = Request::new(Method::Post, uri);
+    req.headers_mut().set(ContentType::json());
+    req.headers_mut().set(ContentLength(json.len() as u64));
+    req.set_body(json);
+
+    let post = client.request(req).and_then(|res| {
+        println!("POST: {}", res.status());
+
+        res.body().concat2()
+    });
+
+    let posted = core.run(post).unwrap();
+
+    println!("POST: {}", str::from_utf8(&posted)?);
+
+    return Ok(());
+}
+
 fn main() {
     rocket::ignite()
         .mount("/", routes![post_json, moo])
@@ -134,6 +155,6 @@ fn main() {
 fn parse_text(text: String, display_name: String) -> String {
     return match text.trim() {
         "!help" => "Not implemented yet".to_string(),
-        _ => format!("Did not quite catch that, * {} *, type `!help` for help", display_name)
+        _ => format!("Did not quite catch that, *{}*, type `!help` for help", display_name)
     }
 }
