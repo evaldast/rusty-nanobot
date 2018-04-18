@@ -155,7 +155,7 @@ fn parse_text(text: String, display_name: String) -> String {
 
 fn remove_bot_name_from_text(text: String) -> String {
     match text.starts_with("@") {
-        true => return text.split("@Rusty Nanobot").nth(1).unwrap().to_string(),
+        true => { let mut t = text.split("@Rusty Nanobot").nth(1).unwrap().to_string(); println!("{}", t); return t }, 
         false => return text
     }
 }
