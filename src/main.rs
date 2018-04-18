@@ -139,19 +139,11 @@ fn call_wallet() -> Result<String, Box<Error>> {
 
     let posted = core.run(post).unwrap();
 
-    //println!("POST: {}", str::from_utf8(&posted)?);
-
     return Ok(str::from_utf8(&posted)?.to_string());
 }
 
-fn main() {
-    rocket::ignite()
-        .mount("/", routes![post_json, moo])
-        .launch();
-}
-
 fn parse_text(text: String, display_name: String) -> String {
-    return match text.trim() {
+    return match remove_bot_name_from_text(text).trim() {
         "!help" => "Available commands: `!help` `!node_status`".to_string(),
         "!node_status" => match call_wallet() {
             Ok(s) => format!("{}", s),
@@ -159,4 +151,17 @@ fn parse_text(text: String, display_name: String) -> String {
         },
         _ => format!("Did not quite catch that, *{}*, type `!help` for help", display_name)
     }
+}
+
+fn remove_bot_name_from_text(text: String) -> String {
+    match text.starts_with("@") {
+        true => return text.split("@Rusty Nanobot").nth(1).unwrap().to_string(),
+        false => return text
+    }
+}
+
+fn main() {
+    rocket::ignite()
+        .mount("/", routes![post_json, moo])
+        .launch();
 }
