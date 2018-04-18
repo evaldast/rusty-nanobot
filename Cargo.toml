@@ -20,4 +20,4 @@ features = ["json"]
 
 [dependencies.rusqlite]
 version = "0.13.0"
-#features = ["bundled"]
+features = ["bundled"]
