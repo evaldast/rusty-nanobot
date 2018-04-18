@@ -10,10 +10,11 @@ extern crate futures;
 extern crate hyper;
 extern crate tokio_core;
 
-// extern crate rusqlite;
+extern crate rusqlite;
 
 mod api;
+mod db;
 
 fn main() {
-    api::rocket().launch();
+    api::rocket(db::get_connection()).launch();
 }

@@ -1,7 +1,6 @@
 use std::sync::Mutex;
 use rusqlite::{Connection, Error};
-
-type DbConn = Mutex<Connection>;
+use rocket::State;
 
 fn init_database(conn: &Connection) {
     conn.execute("CREATE TABLE entries (
@@ -15,23 +14,16 @@ fn init_database(conn: &Connection) {
         .expect("insert single entry into entries table");
 }
 
-#[get("/")]
-fn hello(db_conn: State<DbConn>) -> Result<String, Error>  {
+pub fn test(db_conn: State<Mutex<Connection>>) -> Result<String, Error>  {
     db_conn.lock()
         .expect("db connection lock")
         .query_row("SELECT name FROM entries WHERE id = 0",
                    &[], |row| { row.get(0) })
 }
 
-pub fn get_connection() -> Mutex {
-    // Open a new in-memory SQLite database.
+pub fn get_connection() -> Mutex<Connection> {
     let conn = Connection::open_in_memory().expect("in memory db");
-
-    // Initialize the `entries` table in the in-memory database.
     init_database(&conn);
 
-    // Have Rocket manage the database pool.
-    rocket::ignite()
-        .manage(Mutex::new(conn))
-        .mount("/", routes![hello])
+    return Mutex::new(conn);
 }

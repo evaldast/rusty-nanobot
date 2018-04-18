@@ -7,6 +7,10 @@ use futures::{Future, Stream};
 use tokio_core::reactor::Core;
 use std::str;
 use std::error::Error;
+use rusqlite::Connection;
+use std::sync::Mutex;
+use rocket::State;
+use db;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -105,8 +109,11 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
 }
 
 #[get("/")]
-fn moo() -> &'static str {
-    "Mooo, from Uboontoo!"
+fn moo(db_conn: State<Mutex<Connection>>) -> String {
+    match db::test(db_conn) {
+        Ok(s) => format!("{}", s),
+        Err(s) => format!("{}", s)
+    }
 }
 
 fn call_wallet() -> Result<String, Box<Error>> {
@@ -149,7 +156,8 @@ fn remove_bot_name_from_text(text: String) -> String {
     }
 }
 
-pub fn rocket() -> Rocket {
+pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
+        .manage(db_conn)
         .mount("/", routes![post_json, moo])
 }
