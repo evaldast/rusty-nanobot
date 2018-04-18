@@ -1,16 +1,10 @@
 use rocket::Rocket;
 use rocket_contrib::Json;
-use hyper::{Method, Request};
-use hyper::header::{ContentLength, ContentType};
-use hyper::Client;
-use futures::{Future, Stream};
-use tokio_core::reactor::Core;
-use std::str;
-use std::error::Error;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use rocket::State;
 use db;
+use node;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -110,38 +104,16 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
 
 #[get("/")]
 fn moo(db_conn: State<Mutex<Connection>>) -> String {
-    match db::test(db_conn) {
+    match node::call_wallet() {
         Ok(s) => format!("{}", s),
         Err(s) => format!("{}", s)
     }
 }
 
-fn call_wallet() -> Result<String, Box<Error>> {
-    let mut core = Core::new()?;
-    let client = Client::new(&core.handle());
-
-    let json = r#"{"action":"block_count"}"#;
-    let uri = "http://127.0.0.1:7076".parse()?;
-    let mut req = Request::new(Method::Post, uri);
-    req.headers_mut().set(ContentType::json());
-    req.headers_mut().set(ContentLength(json.len() as u64));
-    req.set_body(json);
-
-    let post = client.request(req).and_then(|res| {
-        println!("POST: {}", res.status());
-
-        res.body().concat2()
-    });
-
-    let posted = core.run(post).unwrap();
-
-    return Ok(str::from_utf8(&posted)?.to_string());
-}
-
 fn parse_text(text: String, display_name: String) -> String {
     return match remove_bot_name_from_text(text).trim() {
         "!help" => "Available commands: `!help` `!node_status`".to_string(),
-        "!node_status" => match call_wallet() {
+        "!node_status" => match node::call_wallet() {
             Ok(s) => format!("{}", s),
             Err(s) => format!("{}", s)
         },

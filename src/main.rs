@@ -14,6 +14,7 @@ extern crate rusqlite;
 
 mod api;
 mod db;
+mod node;
 
 fn main() {
     api::rocket(db::get_connection()).launch();
