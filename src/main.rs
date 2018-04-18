@@ -96,8 +96,6 @@ struct ResponseMessage {
 fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     println!("{:?}", &event.0);
 
-    call_wallet();
-
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
@@ -122,7 +120,7 @@ fn moo() -> &'static str {
     "Mooo, from Uboontoo!"
 }
 
-fn call_wallet() -> Result<(), Box<Error>> {
+fn call_wallet() -> Result<String, Box<Error>> {
     let mut core = Core::new()?;
     let client = Client::new(&core.handle());
 
@@ -141,9 +139,9 @@ fn call_wallet() -> Result<(), Box<Error>> {
 
     let posted = core.run(post).unwrap();
 
-    println!("POST: {}", str::from_utf8(&posted)?);
+    //println!("POST: {}", str::from_utf8(&posted)?);
 
-    return Ok(());
+    return Ok(str::from_utf8(&posted)?.to_string());
 }
 
 fn main() {
@@ -154,7 +152,11 @@ fn main() {
 
 fn parse_text(text: String, display_name: String) -> String {
     return match text.trim() {
-        "!help" => "Not implemented yet".to_string(),
+        "!help" => "Available commands: `!help` `!node_status`".to_string(),
+        "!node_status" => match call_wallet() {
+            Ok(s) => format!("{}", s),
+            Err(s) => format!("{}", s)
+        },
         _ => format!("Did not quite catch that, *{}*, type `!help` for help", display_name)
     }
 }
