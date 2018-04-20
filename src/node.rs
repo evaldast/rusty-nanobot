@@ -12,6 +12,8 @@ pub struct NewAccount {
     pub account: String,
     public: String,
     private: String,
+
+    #[serde(default)]
     email: String
 }
 

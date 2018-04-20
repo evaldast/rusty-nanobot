@@ -54,7 +54,7 @@ struct Thread {
     name: String,
 
     #[serde(rename = "retentionSettings")]
-    retention_settings: RetentionSettings,
+    retention_settings: RetentionSettings
 }
 
 #[derive(Deserialize, Debug, Default)]
