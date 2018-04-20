@@ -27,7 +27,7 @@ pub fn add_account(db_conn: &Mutex<Connection>, acc: Account) -> Result<(), Erro
 pub fn get_account(db_conn: &Mutex<Connection>, email: String) -> Result<Account, Error> {
     db_conn.lock()
         .expect("db connection lock")
-        .query_row("SELECT account, public, private, email FROM entries WHERE email = ?", &[&email], 
+        .query_row("SELECT account, public, private, email FROM accounts WHERE email = ?", &[&email], 
             |row| { Account { account: row.get(0), public: row.get(1), private: row.get(2), email: row.get(3) } })    
 } 
 
