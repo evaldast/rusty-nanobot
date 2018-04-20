@@ -9,7 +9,6 @@ extern crate rocket_contrib;
 extern crate futures;
 extern crate hyper;
 extern crate tokio_core;
-
 extern crate rusqlite;
 
 mod api;

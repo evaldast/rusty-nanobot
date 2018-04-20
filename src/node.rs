@@ -8,7 +8,7 @@ use std::str;
 use serde_json;
 
 #[derive(Deserialize)]
-pub struct NewAccount {
+pub struct Account {
     pub account: String,
     pub public: String,
     pub private: String,
@@ -17,7 +17,7 @@ pub struct NewAccount {
     pub email: String
 }
 
-pub fn create_new_account() -> Result<NewAccount, Box<Error>> {
+pub fn create_new_account() -> Result<Account, Box<Error>> {
     return Ok(serde_json::from_slice(&call_wallet(r#"{"action":"key_create"}"#)?).unwrap());
 }
 

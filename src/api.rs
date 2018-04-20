@@ -5,6 +5,7 @@ use rocket::State;
 use rocket_contrib::Json;
 use rusqlite::Connection;
 use std::sync::Mutex;
+use node::Account;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -112,11 +113,15 @@ fn moo() -> String {
 
 fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> String {
     return match remove_bot_name_from_text(text).trim() {
-        "!help" => "Available commands: `!help` `!create_account`".to_string(),
+        "!help" => "Available commands: `!help` `!create_account` `!balance`".to_string(),
         "!create_account" => match node::create_new_account() {
             Ok(acc) => add_account_to_database(acc, user.email, db_conn),
-            Err(err) => format!("{}", err),
+            Err(err) => format!("{}", err)
         },
+        "!balance" => match db::get_account(db_conn, user.email) {
+            Ok(acc) => format!("{} {} {} {}", acc.account, acc.public, acc.private, acc.email),
+            Err(err) => format!("{}", err)
+        }
         _ => format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name),
     };
 }
@@ -128,7 +133,7 @@ fn remove_bot_name_from_text(text: String) -> String {
     }
 }
 
-fn add_account_to_database(acc: node::NewAccount, email: String, db_conn: &Mutex<Connection>) -> String { 
+fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connection>) -> String { 
     match db::add_account(&db_conn, acc) {
         Ok(_) => format!("Account has been succesfully created, to check your balance type `!balance`"),
         Err(err) => format!("{}", err)
