@@ -1,10 +1,10 @@
+use db;
+use node;
 use rocket::Rocket;
+use rocket::State;
 use rocket_contrib::Json;
 use rusqlite::Connection;
 use std::sync::Mutex;
-use rocket::State;
-use db;
-use node;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -86,14 +86,17 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
-                text: format!("Hello and thanks for adding me, *{}*. For help type `!help`", event.0.user.display_name),
+                text: format!(
+                    "Hello and thanks for adding me, *{}*. For help type `!help`",
+                    event.0.user.display_name
+                ),
             })
         }
-        "MESSAGE" => {
-            return Json(ResponseMessage {
-                text: parse_text(event.0.message.text, event.0.user.display_name)
-            })
-        }
+        // "MESSAGE" => {
+        //     return Json(ResponseMessage {
+        //         text: parse_text(event.0.message.text, event.0.user.display_name),
+        //     })
+        // }
         _ => {
             return Json(ResponseMessage {
                 text: "Unsupported event".to_string(),
@@ -105,26 +108,29 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
 #[get("/")]
 fn moo(db_conn: State<Mutex<Connection>>) -> String {
     match node::call_wallet() {
-        Ok(s) => format!("{}", s),
-        Err(s) => format!("{}", s)
+        Ok(s) => format!("{}", s.account),
+        Err(s) => format!("{}", s),
     }
 }
 
-fn parse_text(text: String, display_name: String) -> String {
-    return match remove_bot_name_from_text(text).trim() {
-        "!help" => "Available commands: `!help` `!node_status`".to_string(),
-        "!node_status" => match node::call_wallet() {
-            Ok(s) => format!("{}", s),
-            Err(s) => format!("{}", s)
-        },
-        _ => format!("Did not quite catch that, *{}*, type `!help` for help", display_name)
-    }
-}
+// fn parse_text(text: String, display_name: String) -> String {
+//     return match remove_bot_name_from_text(text).trim() {
+//         "!help" => "Available commands: `!help` `!node_status`".to_string(),
+//         "!node_status" => match node::call_wallet() {
+//             Ok(s) => format!("{}", s),
+//             Err(s) => format!("{}", s),
+//         },
+//         _ => format!(
+//             "Did not quite catch that, *{}*, type `!help` for help",
+//             display_name
+//         ),
+//     };
+// }
 
 fn remove_bot_name_from_text(text: String) -> String {
     match text.starts_with("@") {
-        true =>  return text.split("@Rusty Nanobot").nth(1).unwrap().to_string(), 
-        false => return text
+        true => return text.split("@Rusty Nanobot").nth(1).unwrap().to_string(),
+        false => return text,
     }
 }
 

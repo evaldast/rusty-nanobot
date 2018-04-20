@@ -5,12 +5,21 @@ use futures::{Future, Stream};
 use hyper::{Method, Request};
 use hyper::header::{ContentLength, ContentType};
 use std::str;
+use serde_json::{from_str, from_slice};
 
-pub fn call_wallet() -> Result<String, Box<Error>> {
+#[derive(Serialize, Deserialize)]
+pub struct NewAccount {
+    pub account: String,
+    public: String,
+    private: String,
+    email: String
+}
+
+pub fn call_wallet() -> Result<NewAccount, Box<Error>> {
     let mut core = Core::new()?;
     let client = Client::new(&core.handle());
 
-    let json = r#"{"action":"block_count"}"#;
+    let json = r#"{"action":"key_create"}"#;
     let uri = "http://127.0.0.1:7076".parse()?;
     let mut req = Request::new(Method::Post, uri);
     req.headers_mut().set(ContentType::json());
@@ -24,6 +33,8 @@ pub fn call_wallet() -> Result<String, Box<Error>> {
     });
 
     let posted = core.run(post).unwrap();
+    let acc:NewAccount = from_slice(&posted).unwrap();
+    //let account:NewAccount = from_str(str::from_utf8(&posted)?)?;
 
-    return Ok(str::from_utf8(&posted)?.to_string());
+    return Ok(acc);
 }
