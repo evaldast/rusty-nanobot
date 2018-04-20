@@ -133,8 +133,8 @@ fn remove_bot_name_from_text(text: String) -> String {
     }
 }
 
-fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connection>) -> String { 
-    match db::add_account(&db_conn, acc) {
+fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connection>) -> String {
+    match db::add_account(&db_conn, acc, email) {
         Ok(_) => format!("Account has been succesfully created, to check your balance type `!balance`"),
         Err(err) => format!("{}", err)
     }
