@@ -80,7 +80,7 @@ struct ResponseMessage {
 }
 
 #[post("/hello", format = "application/json", data = "<event>")]
-fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
+fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
     println!("{:?}", &event.0);
 
     match event.0.event_type.trim() {
@@ -92,11 +92,11 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
                 ),
             })
         }
-        // "MESSAGE" => {
-        //     return Json(ResponseMessage {
-        //         text: parse_text(event.0.message.text, event.0.user.display_name),
-        //     })
-        // }
+        "MESSAGE" => {
+            return Json(ResponseMessage {
+                text: parse_text(event.0.message.text, event.0.user, &db_conn),
+            })
+        }
         _ => {
             return Json(ResponseMessage {
                 text: "Unsupported event".to_string(),
@@ -106,31 +106,32 @@ fn post_json(event: Json<Event>) -> Json<ResponseMessage> {
 }
 
 #[get("/")]
-fn moo(db_conn: State<Mutex<Connection>>) -> String {
-    match node::call_wallet() {
-        Ok(s) => format!("{}", s.account),
-        Err(s) => format!("{}", s),
-    }
+fn moo() -> String {
+    return format!("Wassabi");
 }
 
-// fn parse_text(text: String, display_name: String) -> String {
-//     return match remove_bot_name_from_text(text).trim() {
-//         "!help" => "Available commands: `!help` `!node_status`".to_string(),
-//         "!node_status" => match node::call_wallet() {
-//             Ok(s) => format!("{}", s),
-//             Err(s) => format!("{}", s),
-//         },
-//         _ => format!(
-//             "Did not quite catch that, *{}*, type `!help` for help",
-//             display_name
-//         ),
-//     };
-// }
+fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> String {
+    return match remove_bot_name_from_text(text).trim() {
+        "!help" => "Available commands: `!help` `!create_account`".to_string(),
+        "!create_account" => match node::create_new_account() {
+            Ok(acc) => add_account_to_database(acc, user.email, db_conn),
+            Err(err) => format!("{}", err),
+        },
+        _ => format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name),
+    };
+}
 
 fn remove_bot_name_from_text(text: String) -> String {
     match text.starts_with("@") {
         true => return text.split("@Rusty Nanobot").nth(1).unwrap().to_string(),
         false => return text,
+    }
+}
+
+fn add_account_to_database(acc: node::NewAccount, email: String, db_conn: &Mutex<Connection>) -> String { 
+    match db::add_account(&db_conn, acc) {
+        Ok(_) => format!("Account has been succesfully created, to check your balance type `!balance`"),
+        Err(err) => format!("{}", err)
     }
 }
 
