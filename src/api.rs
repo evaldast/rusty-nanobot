@@ -5,7 +5,7 @@ use rocket::State;
 use rocket_contrib::Json;
 use rusqlite::Connection;
 use std::sync::Mutex;
-use node::Account;
+use node::{Account, Balance};
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -118,10 +118,7 @@ fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> String
             Ok(acc) => add_account_to_database(acc, user.email, db_conn),
             Err(err) => format!("{}", err)
         },
-        "!balance" => match db::get_account(db_conn, user.email) {
-            Ok(acc) => format!("{} {} {} {}", acc.account, acc.public, acc.private, acc.email),
-            Err(err) => format!("{}", err)
-        }
+        "!balance" => get_balance(user.email, db_conn),
         _ => format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name),
     };
 }
@@ -138,6 +135,20 @@ fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connecti
         Ok(_) => format!("Account has been succesfully created, to check your balance type `!balance`"),
         Err(err) => format!("{}", err)
     }
+}
+
+fn get_balance(email: String, db_conn: &Mutex<Connection>) -> String {
+    let acc:Account = match db::get_account(db_conn, email) {
+        Ok(a) => a,
+        Err(err) => return format!("{}", err)
+    };
+
+    let bal:Balance = match node::get_balance(acc.account) {
+        Ok(b) => b,
+        Err(err) => return format!("{}", err)
+    };
+
+    return format!("Current balance: {}; Pending: {}", bal.balance, bal.pending);
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {

@@ -17,11 +17,36 @@ pub struct Account {
     pub email: String
 }
 
-pub fn create_new_account() -> Result<Account, Box<Error>> {
-    return Ok(serde_json::from_slice(&call_wallet(r#"{"action":"key_create"}"#)?).unwrap());
+#[derive(Deserialize)]
+pub struct Balance {
+    pub balance: u64,
+    pub pending: u64
 }
 
-fn call_wallet(json_command: &'static str) -> Result<Chunk, Box<Error>> {
+#[derive(Serialize)]
+struct BasicCommand {
+    action: &'static str
+}
+
+#[derive(Serialize)]
+struct AccountCommand {
+    action: &'static str,
+    account: String
+}
+
+pub fn create_new_account() -> Result<Account, Box<Error>> {
+    let json_command:String = serde_json::to_string(&BasicCommand {action: "key_create"})?;
+
+    return Ok(serde_json::from_slice(&call_wallet(json_command)?).unwrap());
+}
+
+pub fn get_balance(account: String) -> Result<Balance, Box<Error>> {
+    let json_command:String = serde_json::to_string(&AccountCommand {action: "account_balance", account: account})?;
+    
+    return Ok(serde_json::from_slice(&call_wallet(json_command)?).unwrap())
+}
+
+fn call_wallet(json_command: String) -> Result<Chunk, Box<Error>> {
     let mut core = Core::new()?;
     let client = Client::new(&core.handle());
     let uri = "http://127.0.0.1:7076".parse()?;
