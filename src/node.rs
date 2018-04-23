@@ -19,8 +19,8 @@ pub struct Account {
 
 #[derive(Deserialize)]
 pub struct Balance {
-    pub balance: u64,
-    pub pending: u64
+    pub balance: String,
+    pub pending: String
 }
 
 #[derive(Serialize)]
