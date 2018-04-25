@@ -7,6 +7,7 @@ use rusqlite::Connection;
 use std::sync::Mutex;
 use node::{Account, Balance};
 use serde::ser::{Serialize, Serializer, SerializeStruct};
+use std::any::Any;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -107,34 +108,47 @@ struct KeyValue {
     content: String
 }
 
-// impl Serialize for Section {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//         where S: Serializer
-//     {
-//         let mut s = serializer.serialize_struct("Section", 2)?;
-
-//         s.serialize_field("header", &self.header)?;
-//         s.serialize_field("widgets", &self.widgets)?;
-
-//         s.end()
-//     }
-// }
-
-trait WidgetTrait {}
+trait WidgetTrait {
+    fn as_any(&self) -> &Any;
+}
 
 impl Serialize for Box<WidgetTrait> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> 
         where S: Serializer {
-            let mut s = serializer.serialize_struct("Section", 2)?;           
-            
-            s.serialize_field("header", &self.header)?;
+            return match self.as_any().downcast_ref::<Image>() {
+                Some(res) => {
+                        let mut widget_serializer = serializer.serialize_struct("Image", 1)?;
+                        widget_serializer.serialize_field("imageUrl", &res.image_url)?;
 
-           s.end()               
+                        widget_serializer.end()  
+                    },
+                None => {
+                    let key_value: &KeyValue = match self.as_any().downcast_ref::<KeyValue>() {
+                        Some(b) => b,
+                        None => panic!("Unknown type!")
+                    };
+
+                    let mut widget_serializer = serializer.serialize_struct("KeyValue", 2)?;
+                    widget_serializer.serialize_field("topLabel", &key_value.top_label)?;
+                    widget_serializer.serialize_field("content", &key_value.content)?;
+
+                    widget_serializer.end()  
+                }
+            };                
         }
 }
 
-impl WidgetTrait for Image {}
-impl WidgetTrait for KeyValue {}
+impl WidgetTrait for Image {
+    fn as_any(&self) -> &Any {
+        self
+    }
+}
+
+impl WidgetTrait for KeyValue {
+    fn as_any(&self) -> &Any {
+        self
+    }
+}
 
 
 #[post("/hello", format = "application/json", data = "<event>")]
@@ -161,8 +175,8 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
 }
 
 #[get("/")]
-fn moo() -> String {
-    return format!("Wassabi");
+fn moo() -> Json<ResponseMessage> {
+    return Json(get_qr_code_response("asd".to_string()));
 }
 
 fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
@@ -224,6 +238,6 @@ fn get_qr_code_response(text: String) -> ResponseMessage {
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
-        .manage(db_conn)
+        // .manage(db_conn)
         .mount("/", routes![post_json, moo])
 }
