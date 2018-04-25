@@ -6,6 +6,7 @@ use rocket_contrib::Json;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use node::{Account, Balance};
+use serde::ser::{Serialize, Serializer, SerializeStruct};
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -77,7 +78,7 @@ struct Message {
 
 #[derive(Serialize)]
 struct ResponseMessage {
-    text: String,
+    text: Option<String>,
     cards: Option<Vec<Card>>
 }
 
@@ -88,12 +89,8 @@ struct Card {
 
 #[derive(Serialize)]
 struct Section {
-    widgets: Vec<Widget>
-}
-
-#[derive(Serialize)]
-struct Widget {
-    image: Image
+    header: String,
+    widgets: Vec<Box<WidgetTrait>>
 }
 
 #[derive(Serialize)]
@@ -102,6 +99,44 @@ struct Image {
     image_url: String
 }
 
+#[derive(Serialize)]
+struct KeyValue {
+    #[serde(rename = "topLabel")]
+    top_label: String,
+
+    content: String
+}
+
+// impl Serialize for Section {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//         where S: Serializer
+//     {
+//         let mut s = serializer.serialize_struct("Section", 2)?;
+
+//         s.serialize_field("header", &self.header)?;
+//         s.serialize_field("widgets", &self.widgets)?;
+
+//         s.end()
+//     }
+// }
+
+trait WidgetTrait {}
+
+impl Serialize for Box<WidgetTrait> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> 
+        where S: Serializer {
+            let mut s = serializer.serialize_struct("Section", 2)?;           
+            
+            s.serialize_field("header", &self.header)?;
+
+           s.end()               
+        }
+}
+
+impl WidgetTrait for Image {}
+impl WidgetTrait for KeyValue {}
+
+
 #[post("/hello", format = "application/json", data = "<event>")]
 fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
     // println!("{:?}", &event.0);
@@ -109,7 +144,7 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
-                text: format!("Hello and thanks for adding me, *{}*. For help type `!help`", event.0.user.display_name),
+                text: Some(format!("Hello and thanks for adding me, *{}*. For help type `!help`", event.0.user.display_name)),
                 cards: None
             })
         }
@@ -118,7 +153,7 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
             }
         _ => {
             return Json(ResponseMessage {
-                text: "Unsupported event".to_string(),
+                text: Some("Unsupported event".to_string()),
                 cards: None
             })
         }
@@ -132,17 +167,14 @@ fn moo() -> String {
 
 fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
     return match remove_bot_name_from_text(text).trim() {
-        "!help" => ResponseMessage { text: "Available commands: `!help` `!create_account` `!balance` `!deposit`".to_string(), cards: None },
+        "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit`".to_string()), cards: None },
         "!create_account" => match node::create_new_account() {
-            Ok(acc) => ResponseMessage { text: add_account_to_database(acc, user.email, db_conn), cards: None },
-            Err(err) => ResponseMessage { text: format!("{}", err), cards: None }
+            Ok(acc) => ResponseMessage { text: Some(add_account_to_database(acc, user.email, db_conn)), cards: None },
+            Err(err) => ResponseMessage { text: Some(format!("{}", err)), cards: None }
         },
-        "!balance" => ResponseMessage { text: get_balance(user.email, db_conn), cards: None },
-        "!deposit" => ResponseMessage { 
-            text: format!("Scan QR code from your mobile device Nano wallet"), 
-            cards: Some(vec![Card { sections: vec![Section { widgets: vec![ Widget { image: Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } } ]}]}])
-            },
-        _ => ResponseMessage { text: format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name), cards: None }
+        "!balance" => ResponseMessage { text: Some(get_balance(user.email, db_conn)), cards: None },
+        "!deposit" => get_qr_code_response("text".to_string()),
+        _ => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
     };
 }
 
@@ -172,6 +204,22 @@ fn get_balance(email: String, db_conn: &Mutex<Connection>) -> String {
     };
 
     return format!("Current balance: {}; Pending: {}", bal.balance, bal.pending);
+}
+
+fn get_qr_code_response(text: String) -> ResponseMessage {
+    ResponseMessage { 
+            text: None, 
+            cards: Some(
+                vec![Card { sections: vec![
+                    Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
+                        Box::new(Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") }) 
+                        ]},
+                    Section { header: format!("Deposit"), widgets: vec![
+                         Box::new(KeyValue { top_label: format!("To"), content: format!("user_name, email_address") }),
+                         Box::new(KeyValue { top_label: format!("Wallet"), content: format!("wallet_address") })
+                         ]}
+                    ]}])
+            }
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
