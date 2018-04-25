@@ -78,6 +78,28 @@ struct Message {
 #[derive(Serialize)]
 struct ResponseMessage {
     text: String,
+    cards: Option<Vec<Card>>
+}
+
+#[derive(Serialize)]
+struct Card {
+    sections: Vec<Section>
+}
+
+#[derive(Serialize)]
+struct Section {
+    widgets: Vec<Widget>
+}
+
+#[derive(Serialize)]
+struct Widget {
+    image: Image
+}
+
+#[derive(Serialize)]
+struct Image {
+    #[serde(rename = "imageUrl")]
+    image_url: String
 }
 
 #[post("/hello", format = "application/json", data = "<event>")]
@@ -87,20 +109,17 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
             return Json(ResponseMessage {
-                text: format!(
-                    "Hello and thanks for adding me, *{}*. For help type `!help`",
-                    event.0.user.display_name
-                ),
+                text: format!("Hello and thanks for adding me, *{}*. For help type `!help`", event.0.user.display_name),
+                cards: None
             })
         }
-        "MESSAGE" => {
-            return Json(ResponseMessage {
-                text: parse_text(event.0.message.text, event.0.user, &db_conn),
-            })
-        }
+        "MESSAGE" => { 
+            return Json(parse_text(event.0.message.text, event.0.user, &db_conn))
+            }
         _ => {
             return Json(ResponseMessage {
                 text: "Unsupported event".to_string(),
+                cards: None
             })
         }
     };
@@ -111,15 +130,19 @@ fn moo() -> String {
     return format!("Wassabi");
 }
 
-fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> String {
+// fn processMessage(text: String) -> ResponseMessage {
+
+// }
+
+fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
     return match remove_bot_name_from_text(text).trim() {
-        "!help" => "Available commands: `!help` `!create_account` `!balance`".to_string(),
+        "!help" => ResponseMessage { text: "Available commands: `!help` `!create_account` `!balance`".to_string(), cards: None },
         "!create_account" => match node::create_new_account() {
-            Ok(acc) => add_account_to_database(acc, user.email, db_conn),
-            Err(err) => format!("{}", err)
+            Ok(acc) => ResponseMessage { text: add_account_to_database(acc, user.email, db_conn), cards: None },
+            Err(err) => ResponseMessage { text: format!("{}", err), cards: None }
         },
-        "!balance" => get_balance(user.email, db_conn),
-        _ => format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name),
+        "!balance" => ResponseMessage { text: get_balance(user.email, db_conn), cards: None },
+        _ => ResponseMessage { text: format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name), cards: None }
     };
 }
 
