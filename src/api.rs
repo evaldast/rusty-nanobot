@@ -130,18 +130,18 @@ fn moo() -> String {
     return format!("Wassabi");
 }
 
-// fn processMessage(text: String) -> ResponseMessage {
-
-// }
-
 fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
     return match remove_bot_name_from_text(text).trim() {
-        "!help" => ResponseMessage { text: "Available commands: `!help` `!create_account` `!balance`".to_string(), cards: None },
+        "!help" => ResponseMessage { text: "Available commands: `!help` `!create_account` `!balance` `!deposit`".to_string(), cards: None },
         "!create_account" => match node::create_new_account() {
             Ok(acc) => ResponseMessage { text: add_account_to_database(acc, user.email, db_conn), cards: None },
             Err(err) => ResponseMessage { text: format!("{}", err), cards: None }
         },
         "!balance" => ResponseMessage { text: get_balance(user.email, db_conn), cards: None },
+        "!deposit" => ResponseMessage { 
+            text: format!("Scan QR code from your mobile device Nano wallet"), 
+            cards: Some(vec![Card { sections: vec![Section { widgets: vec![ Widget { image: Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } } ]}]}])
+            },
         _ => ResponseMessage { text: format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name), cards: None }
     };
 }
