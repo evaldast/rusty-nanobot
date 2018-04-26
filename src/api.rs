@@ -126,22 +126,21 @@ trait Widget {
 impl Serialize for Box<Widget> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> 
         where S: Serializer {
-            return match self.as_any().downcast_ref::<Image>() {
+            return match self.as_any().downcast_ref::<ImageWidget>() {
                 Some(res) => {
-                        let mut widget_serializer = serializer.serialize_struct("Image", 1)?;
-                        widget_serializer.serialize_field("imageUrl", &res.image_url)?;
+                        let mut widget_serializer = serializer.serialize_struct("ImageWidget", 1)?;
+                        widget_serializer.serialize_field("image", &res.image)?;
 
                         widget_serializer.end()  
                     },
                 None => {
-                    let key_value: &KeyValue = match self.as_any().downcast_ref::<KeyValue>() {
+                    let key_value: &KeyValueWidget = match self.as_any().downcast_ref::<KeyValueWidget>() {
                         Some(b) => b,
                         None => panic!("Unknown type!")
                     };
 
-                    let mut widget_serializer = serializer.serialize_struct("KeyValue", 2)?;
-                    widget_serializer.serialize_field("topLabel", &key_value.top_label)?;
-                    widget_serializer.serialize_field("content", &key_value.content)?;
+                    let mut widget_serializer = serializer.serialize_struct("KeyValue", 1)?;
+                    widget_serializer.serialize_field("keyValue", &key_value.key_value)?;
 
                     widget_serializer.end()  
                 }
