@@ -238,6 +238,6 @@ fn get_qr_code_response(text: String) -> ResponseMessage {
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
-        // .manage(db_conn)
+        .manage(db_conn)
         .mount("/", routes![post_json, moo])
 }
