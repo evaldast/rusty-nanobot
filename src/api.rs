@@ -91,7 +91,7 @@ struct Card {
 #[derive(Serialize)]
 struct Section {
     header: String,
-    widgets: Vec<Image>
+    widgets: Vec<Widget>
 }
 
 #[derive(Serialize)]
@@ -106,6 +106,11 @@ struct KeyValue {
     top_label: String,
 
     content: String
+}
+
+#[derive(Serialize)]
+struct Widget {
+    image: Image
 }
 
 trait WidgetTrait {
@@ -230,7 +235,7 @@ fn get_qr_code_response(text: String) -> ResponseMessage {
                     //      Box::new(KeyValue { top_label: format!("Wallet"), content: format!("wallet_address") })
                     //      ]},
                     Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
-                        Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } 
+                        Widget { image: Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } } 
                         ]}
                     ]}])
             }
