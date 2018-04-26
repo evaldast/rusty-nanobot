@@ -186,7 +186,7 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
 
 #[get("/")]
 fn moo() -> Json<ResponseMessage> {
-    return Json(get_qr_code_response("asd".to_string()));
+    return Json(ResponseMessage { text: Some("swx".to_owned()), cards: None });
 }
 
 fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
@@ -197,7 +197,7 @@ fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> Respon
             Err(err) => ResponseMessage { text: Some(format!("{}", err)), cards: None }
         },
         "!balance" => ResponseMessage { text: Some(get_balance(user.email, db_conn)), cards: None },
-        "!deposit" => get_qr_code_response("text".to_string()),
+        "!deposit" => get_deposit_response(&user, db_conn),
         _ => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
     };
 }
@@ -217,7 +217,7 @@ fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connecti
 }
 
 fn get_balance(email: String, db_conn: &Mutex<Connection>) -> String {
-    let acc:Account = match db::get_account(db_conn, email) {
+    let acc:Account = match db::get_account(db_conn, &email) {
         Ok(a) => a,
         Err(err) => return format!("{}", err)
     };
@@ -230,17 +230,22 @@ fn get_balance(email: String, db_conn: &Mutex<Connection>) -> String {
     return format!("Current balance: {}; Pending: {}", bal.balance, bal.pending);
 }
 
-fn get_qr_code_response(text: String) -> ResponseMessage {
+fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
+    let acc:Account = match db::get_account(db_conn, &user.email) {
+        Ok(a) => a,
+        Err(err) => return ResponseMessage { text: Some(err.to_string()), cards: None }
+    };
+
     ResponseMessage { 
             text: None, 
             cards: Some(
                 vec![Card { sections: vec![
                     Section { header: format!("Deposit"), widgets: vec![
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("user_name, email_address") } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("wallet_address") } })
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}, {}", user.display_name, user.email) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", acc.account) } })
                          ]},
                     Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
-                        Box::new(ImageWidget { image: Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } })
+                        Box::new(ImageWidget { image: Image { image_url: format!("https://api.qrserver.com/v1/create-qr-code/?data={}", acc.account) } })
                         ]}
                     ]}])
             }
