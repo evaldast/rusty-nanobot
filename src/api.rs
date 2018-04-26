@@ -91,7 +91,7 @@ struct Card {
 #[derive(Serialize)]
 struct Section {
     header: String,
-    widgets: Vec<Widget>
+    widgets: Vec<Box<Widget>>
 }
 
 #[derive(Serialize)]
@@ -109,15 +109,21 @@ struct KeyValue {
 }
 
 #[derive(Serialize)]
-struct Widget {
+struct ImageWidget {
     image: Image
 }
 
-trait WidgetTrait {
+#[derive(Serialize)]
+struct KeyValueWidget {
+    #[serde(rename = "keyValue")]
+    key_value: KeyValue
+}
+
+trait Widget {
     fn as_any(&self) -> &Any;
 }
 
-impl Serialize for Box<WidgetTrait> {
+impl Serialize for Box<Widget> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> 
         where S: Serializer {
             return match self.as_any().downcast_ref::<Image>() {
@@ -143,13 +149,13 @@ impl Serialize for Box<WidgetTrait> {
         }
 }
 
-impl WidgetTrait for Image {
+impl Widget for ImageWidget {
     fn as_any(&self) -> &Any {
         self
     }
 }
 
-impl WidgetTrait for KeyValue {
+impl Widget for KeyValueWidget {
     fn as_any(&self) -> &Any {
         self
     }
@@ -235,7 +241,7 @@ fn get_qr_code_response(text: String) -> ResponseMessage {
                     //      Box::new(KeyValue { top_label: format!("Wallet"), content: format!("wallet_address") })
                     //      ]},
                     Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
-                        Widget { image: Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } } 
+                        Box::new(ImageWidget { image: Image { image_url: format!("http://s2.quickmeme.com/img/d0/d073103e1d49fa4240967821f13b77afc73a18898d009023f3d8f9bc808f9122.jpg") } })
                         ]}
                     ]}])
             }
