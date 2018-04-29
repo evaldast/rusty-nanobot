@@ -173,7 +173,7 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
             })
         }
         "MESSAGE" => { 
-            return Json(parse_text(event.0.message.text, event.0.user, &db_conn))
+            return Json(parse_text(&event.0.message.text, event.0.user, &db_conn))
             }
         _ => {
             return Json(ResponseMessage {
@@ -189,9 +189,9 @@ fn moo() -> Json<ResponseMessage> {
     return Json(ResponseMessage { text: Some("swx".to_owned()), cards: None });
 }
 
-fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
-    return match remove_bot_name_from_text(text).trim() {
-        "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit`".to_string()), cards: None },
+fn parse_text(text: &str, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
+    return match remove_bot_name_from_text(text) {
+        "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit` `tip @user ammount`".to_string()), cards: None },
         "!create_account" => ResponseMessage { text: Some(try_create_account(&user, &db_conn)), cards: None },
         "!balance" => ResponseMessage { text: Some(get_balance(user.email, db_conn)), cards: None },
         "!deposit" => get_deposit_response(&user, db_conn),
@@ -199,9 +199,9 @@ fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> Respon
     };
 }
 
-fn remove_bot_name_from_text(text: String) -> String {
-    match text.starts_with("@") {
-        true => return text.split("@Rusty Nanobot").nth(1).unwrap().to_string(),
+fn remove_bot_name_from_text(text: &str) -> &str {
+    match text.trim().starts_with("@") {
+        true => return text.split("@Rusty Nanobot").nth(1).unwrap(),
         false => return text,
     }
 }
@@ -222,13 +222,6 @@ fn try_create_account(user: &Sender, db_conn: &Mutex<Connection>) -> String {
             Err(e) => e.to_string()
         },
         Err(e) => e.to_string()
-    }
-} 
-
-fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connection>) -> String {
-    match db::add_account(&db_conn, acc, email) {
-        Ok(_) => format!("Account has been succesfully created, to check your balance type `!balance`"),
-        Err(err) => format!("{}", err)
     }
 }
 
