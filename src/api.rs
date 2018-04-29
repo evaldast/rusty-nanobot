@@ -220,9 +220,9 @@ fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static
     match node::create_new_account() {
         Ok(acc) => match db::add_account(db_conn, acc, String::from(&*user_email)) {
             Ok(_) => "Account has been succesfully created, to check your balance type `!balance`",
-            Err(e) => "An error has occured attempting to create an account"
+            Err(_) => "An error has occured attempting to create an account"
         },
-        Err(e) => "An error has occured attempting to create an account"
+        Err(_) => "An error has occured attempting to create an account"
     }
 }
 
@@ -234,7 +234,7 @@ fn get_balance(user_email: &str, db_conn: &Mutex<Connection>) -> ResponseMessage
 
     let bal:Balance = match node::get_balance(acc.account) {
         Ok(b) => b,
-        Err(e) => return ResponseMessage { text: Some("An error has occured fetching the balance".to_string()), cards: None }
+        Err(_) => return ResponseMessage { text: Some("An error has occured fetching the balance".to_string()), cards: None }
     };
 
     ResponseMessage { 
