@@ -15,13 +15,10 @@ use node::Account;
 //     ).expect("create accounts table");
 // }
 
-pub fn add_account(db_conn: &Mutex<Connection>, acc: Account, email: String) -> Result<(), Error> {
-    db_conn.lock()
+pub fn add_account(db_conn: &Mutex<Connection>, acc: Account, email: String) -> Result<i32, Error> {
+    return db_conn.lock()
         .expect("db connection lock")
-        .execute("INSERT INTO accounts (account, public, private, email) VALUES (?1, ?2, ?3, ?4)", &[&acc.account, &acc.public, &acc.private, &email])
-        .expect("");
-
-    return Ok(());
+        .execute("INSERT INTO accounts (account, public, private, email) VALUES (?1, ?2, ?3, ?4)", &[&acc.account, &acc.public, &acc.private, &email]);
 }
 
 pub fn get_account(db_conn: &Mutex<Connection>, email: &String) -> Result<Account, Error> {
