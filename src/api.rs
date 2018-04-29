@@ -209,6 +209,25 @@ fn remove_bot_name_from_text(text: String) -> String {
     }
 }
 
+fn try_create_account(user: &Sender, db_conn: &Mutex<Connection>) -> String {
+    let has_account: bool = match db::get_account(db_conn, &user.email) {
+        Ok(_) => true,
+        Err(_) => false
+    };
+
+    if has_account {
+        return "It seems that you already own an account".to_owned();
+    }
+
+    match node::create_new_account() {
+        Ok(acc) => match db::add_account(db_conn, acc, String::from(&*user.email)) {
+            Ok(_) => "Account has been succesfully created, to check your balance type `!balance`".to_owned(),
+            Err(e) => e.to_string()
+        },
+        Err(e) => e.to_string()
+    }
+} 
+
 fn add_account_to_database(acc: Account, email: String, db_conn: &Mutex<Connection>) -> String {
     match db::add_account(&db_conn, acc, email) {
         Ok(_) => format!("Account has been succesfully created, to check your balance type `!balance`"),
