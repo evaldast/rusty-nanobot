@@ -192,10 +192,7 @@ fn moo() -> Json<ResponseMessage> {
 fn parse_text(text: String, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
     return match remove_bot_name_from_text(text).trim() {
         "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit`".to_string()), cards: None },
-        "!create_account" => match node::create_new_account() {
-            Ok(acc) => ResponseMessage { text: Some(add_account_to_database(acc, user.email, db_conn)), cards: None },
-            Err(err) => ResponseMessage { text: Some(format!("{}", err)), cards: None }
-        },
+        "!create_account" => ResponseMessage { text: Some(try_create_account(&user, &db_conn)), cards: None },
         "!balance" => ResponseMessage { text: Some(get_balance(user.email, db_conn)), cards: None },
         "!deposit" => get_deposit_response(&user, db_conn),
         _ => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
