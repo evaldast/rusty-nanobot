@@ -163,7 +163,7 @@ impl Widget for KeyValueWidget {
 
 #[post("/hello", format = "application/json", data = "<event>")]
 fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
-    // println!("{:?}", &event.0);
+    println!("{:?}", &event.0);
 
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {

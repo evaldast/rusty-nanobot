@@ -2,19 +2,19 @@ use rusqlite::{Connection, Error};
 use std::sync::Mutex;
 use node::{Account, Key};
 
-fn init_database(conn: &Connection) {
-    conn.execute(
-        "CREATE TABLE accounts (
-                  id                INTEGER PRIMARY KEY,
-                  account           TEXT NOT NULL,
-                  public            TEXT NOT NULL,
-                  private           TEXT NOT NULL,
-                  wallet            TEXT NOT NULL,
-                  email             TEXT UNIQUE NOT NULL
-                  )",
-        &[],
-    ).expect("create accounts table");
-}
+// fn init_database(conn: &Connection) {
+//     conn.execute(
+//         "CREATE TABLE accounts (
+//                   id                INTEGER PRIMARY KEY,
+//                   account           TEXT NOT NULL,
+//                   public            TEXT NOT NULL,
+//                   private           TEXT NOT NULL,
+//                   wallet            TEXT NOT NULL,
+//                   email             TEXT UNIQUE NOT NULL
+//                   )",
+//         &[],
+//     ).expect("create accounts table");
+// }
 
 pub fn add_account(db_conn: &Mutex<Connection>, key: &Key, email: String, wallet: String) -> Result<i32, Error> {
     return db_conn.lock()
@@ -31,7 +31,6 @@ pub fn get_account(db_conn: &Mutex<Connection>, email: &str) -> Result<Account, 
 
 pub fn get_connection() -> Mutex<Connection> {
     let conn = Connection::open("sqlite/main.database").unwrap();
-    init_database(&conn);
 
     return Mutex::new(conn);
 }
