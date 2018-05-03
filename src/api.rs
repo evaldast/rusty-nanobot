@@ -284,9 +284,9 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
 }
 
 fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
-    let tip_args: (String, String) = parse_tip_arguments(text_args);
+    let tip_args: (&str, &str) = parse_tip_arguments(text_args);
     
-    let acc:Account = match db::get_account(db_conn, &tip_args.0) {
+    let acc:Account = match db::get_account(db_conn, tip_args.0) {
         Ok(a) => a,
         Err(_) => return ResponseMessage { text: Some("There was an error fetching the account".to_string()), cards: None }
     };
@@ -307,7 +307,7 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
 }
 
 fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
-    let args = text_args.split_whitespace();
+    let mut args = text_args.split_whitespace();
 
     let email = match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(args.nth(1).unwrap()) {
         true => args.nth(1).unwrap(),
@@ -315,11 +315,11 @@ fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
     };
 
     let amount = match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(args.nth(2).unwrap()) {
-        true => args.nth(1).unwrap(),
+        true => args.nth(2).unwrap(),
         false => "wasd"
     };
 
-    println!(format!("{} {}", email, amount));
+    println!("{} {}", email, amount);
 
     return (email, amount);
 }
