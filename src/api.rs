@@ -307,11 +307,12 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
 }
 
 fn parse_tip_arguments(text_args: &str) -> (String, String) {
+    println!("validator");
     let validator = Regex::new(r"(?x)
         (?P<email>^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$)
         (?P<amount>^[1-9][0-9]*$)")
         .unwrap();
-
+    println!("captures");
     let captures = validator.captures(text_args).unwrap();
 
     return (captures["email"].to_string(), captures["email"].to_string());
