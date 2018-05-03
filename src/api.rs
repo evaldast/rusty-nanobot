@@ -8,7 +8,6 @@ use std::sync::Mutex;
 use node::{Account, Balance};
 use serde::ser::{Serialize, Serializer, SerializeStruct};
 use std::any::Any;
-use std::error::Error;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -215,14 +214,24 @@ fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static
 
     if has_account {
         return "It seems that you already own an account";
-    }
+    };
 
-    match node::create_new_account() {
-        Ok(acc) => match db::add_account(db_conn, acc, String::from(&*user_email)) {
+    let wallet: node::Wallet = match node::create_new_wallet() {
+        Ok(w) => w,
+        Err(_) => return "An error has occured attempting to create a wallet"
+    }; 
+
+    let key: node::Key = match node::create_new_key() {
+        Ok(k) => k,
+        Err(_) => return "An error has occured attempting to create a key"
+    };
+
+    match node::add_key_to_wallet(&wallet.wallet, &key.private) {
+        Ok(_) => match db::add_account(db_conn, &key, String::from(&*user_email), wallet.wallet) {
             Ok(_) => "Account has been succesfully created, to check your balance type `!balance`",
             Err(_) => "An error has occured attempting to create an account"
         },
-        Err(_) => "An error has occured attempting to create an account"
+        Err(_) => "An error has occured attempting to add key to a wallet"
     }
 }
 
