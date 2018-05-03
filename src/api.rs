@@ -310,7 +310,7 @@ fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
     println!("{}", text_args);
     let mut args = text_args.split_whitespace();
     let mut email: &str = args.nth(1).unwrap();
-    println!("{} {}", email, amount);
+    println!("{}", email);
     let mut amount: &str = args.next().unwrap();
     println!("{} {}", email, amount);
 
