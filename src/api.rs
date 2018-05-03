@@ -306,16 +306,22 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
             }
 }
 
-fn parse_tip_arguments(text_args: &str) -> (String, String) {
-    println!("validator");
-    let validator = Regex::new(r"(?x)
-        (?P<email>^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$)
-        (?P<amount>^[1-9][0-9]*$)")
-        .unwrap();
-    println!("captures");
-    let captures = validator.captures(text_args).unwrap();
+fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
+    let args = text_args.split_whitespace();
 
-    return (captures["email"].to_string(), captures["email"].to_string());
+    let email = match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(args.nth(1).unwrap()) {
+        true => args.nth(1).unwrap(),
+        false => "asd"
+    };
+
+    let amount = match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(args.nth(2).unwrap()) {
+        true => args.nth(1).unwrap(),
+        false => "wasd"
+    };
+
+    println!(format!("{} {}", email, amount));
+
+    return (email, amount);
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
