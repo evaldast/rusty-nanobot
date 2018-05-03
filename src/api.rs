@@ -310,7 +310,7 @@ fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
     println!("{}", text_args);
     let mut args = text_args.split_whitespace();
     let mut email: &str = args.nth(1).unwrap();
-    let mut amount: &str = args.nth(2).unwrap();
+    let mut amount: &str = args.nth(1).unwrap();
 
     email = match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(email) {
         true => email,
