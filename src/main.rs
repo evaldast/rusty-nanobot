@@ -11,6 +11,7 @@ extern crate futures;
 extern crate hyper;
 extern crate tokio_core;
 extern crate rusqlite;
+extern crate regex;
 
 mod api;
 mod db;

@@ -8,6 +8,7 @@ use std::sync::Mutex;
 use node::{Account, Balance};
 use serde::ser::{Serialize, Serializer, SerializeStruct};
 use std::any::Any;
+use regex::Regex;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -163,7 +164,7 @@ impl Widget for KeyValueWidget {
 
 #[post("/hello", format = "application/json", data = "<event>")]
 fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
-    println!("{:?}", &event.0);
+    //println!("{:?}", &event.0);
 
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
@@ -191,18 +192,21 @@ fn moo() -> Json<ResponseMessage> {
 
 fn parse_text(text: &str, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
     return match remove_bot_name_from_text(text) {
-        "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit` `tip @user amount`".to_string()), cards: None },
+        "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit` `!tip receiver_email amount`".to_string()), cards: None },
         "!create_account" => ResponseMessage { text: Some(try_create_account(&user.email, &db_conn).to_string()), cards: None },
         "!balance" => get_balance(&user.email, &db_conn),
         "!deposit" => get_deposit_response(&user, db_conn),
-        _ => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
+        t => match t.starts_with("!tip") {
+            true => try_tip(&db_conn, &t),
+            false => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
+        }
     };
 }
 
 fn remove_bot_name_from_text(text: &str) -> &str {
     match text.trim().starts_with("@") {
-        true => return text.split("@Rusty Nanobot").nth(1).unwrap(),
-        false => return text,
+        true => text.split("@Rusty Nanobot").nth(1).unwrap(),
+        false => text,
     }
 }
 
@@ -269,7 +273,7 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
             cards: Some(
                 vec![Card { sections: vec![
                     Section { header: format!("Deposit"), widgets: vec![
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}, {}", user.display_name, user.email) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}", user.email) } }),
                          Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", acc.account) } })
                          ]},
                     Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
@@ -277,6 +281,40 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
                         ]}
                     ]}])
             }
+}
+
+fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
+    let tip_args: (String, String) = parse_tip_arguments(text_args);
+    
+    let acc:Account = match db::get_account(db_conn, &tip_args.0) {
+        Ok(a) => a,
+        Err(_) => return ResponseMessage { text: Some("There was an error fetching the account".to_string()), cards: None }
+    };
+
+    ResponseMessage { 
+            text: None, 
+            cards: Some(
+                vec![Card { sections: vec![
+                    Section { header: format!("Tip"), widgets: vec![
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}", &tip_args.0) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", acc.account) } })
+                         ]},
+                    Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
+                        Box::new(ImageWidget { image: Image { image_url: format!("https://api.qrserver.com/v1/create-qr-code/?data={}", acc.account) } })
+                        ]}
+                    ]}])
+            }
+}
+
+fn parse_tip_arguments(text_args: &str) -> (String, String) {
+    let validator = Regex::new(r"(?x)
+        (?P<email>^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$)
+        (?P<amount>^[1-9][0-9]*$)")
+        .unwrap();
+
+    let captures = validator.captures(text_args).unwrap();
+
+    return (captures["email"].to_string(), captures["email"].to_string());
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
