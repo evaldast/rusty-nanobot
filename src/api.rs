@@ -197,7 +197,7 @@ fn parse_text(text: &str, user: Sender, db_conn: &Mutex<Connection>) -> Response
         "!balance" => get_balance(&user.email, &db_conn),
         "!deposit" => get_deposit_response(&user, db_conn),
         t => match t.starts_with("!tip") {
-            true => try_tip(&db_conn, &t),
+            true => try_tip(&db_conn, &t, &user.email),
             false => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
         }
     };
@@ -298,30 +298,37 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
             }
 }
 
-fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
+fn try_tip(db_conn: &Mutex<Connection>, text_args: &str, sender_email: &str) -> ResponseMessage {
     let tip_args: (&str, &str) = match parse_tip_arguments(text_args) {
         Ok(a) => a,
         Err(e) => return ResponseMessage { text: Some(e), cards: None }
     };
     
-    let acc:Account = match try_get_account(tip_args.0, db_conn) {
+    let receiver_acc: Account = match try_get_account(tip_args.0, db_conn) {
         Ok(a) => a,
-        Err(_) => return ResponseMessage { text: Some("There was an error fetching the account".to_string()), cards: None }
+        Err(_) => return ResponseMessage { text: Some("There was an error fetching the receiver account".to_string()), cards: None }
     };
 
-    ResponseMessage { 
+    let sender_acc: Account = match try_get_account(sender_email, db_conn) {
+        Ok(a) => a,
+        Err(_) => return ResponseMessage {text: Some("There was an error fetching the sender account".to_string()), cards: None}
+    };
+
+    return match node::send(&sender_acc.wallet, &sender_acc.account, &receiver_acc.account, tip_args.1) {
+        Ok(_) => ResponseMessage { 
             text: None, 
             cards: Some(
                 vec![Card { sections: vec![
-                    Section { header: format!("Tip"), widgets: vec![
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}", &tip_args.0) } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", acc.account) } })
-                         ]},
-                    Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
-                        Box::new(ImageWidget { image: Image { image_url: format!("https://api.qrserver.com/v1/create-qr-code/?data={}", acc.account) } })
-                        ]}
+                    Section { header: format!("Tip sent!"), widgets: vec![
+                        Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("From"), content: format!("{}", sender_email) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}", tip_args.0) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", receiver_acc.account) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Amount"), content: format!("{}", tip_args.1) } })
+                         ]}
                     ]}])
-            }
+            },
+        Err(_) => ResponseMessage {text: Some("There was an error sending the tip".to_string()), cards: None}
+    }
 }
 
 fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {

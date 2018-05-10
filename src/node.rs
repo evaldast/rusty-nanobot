@@ -54,6 +54,21 @@ struct WalletCommand {
     key: String
 }
 
+#[derive(Serialize)]
+struct ConversionCommand {
+    action: &'static str,
+    amount: String
+}
+
+#[derive(Serialize)] 
+struct SendCommand {
+    action: &'static str,
+    wallet: String,
+    source: String,
+    destination: String,
+    amount: String
+}
+
 pub fn create_new_key() -> Result<Key, Box<Error>> {
     let json_command: String = serde_json::to_string(&BasicCommand {action: "key_create"})?;
 
@@ -69,7 +84,7 @@ pub fn create_new_wallet() -> Result<Wallet, Box<Error>> {
 pub fn get_balance(account: String) -> Result<Balance, Box<Error>> {
     let json_command: String = serde_json::to_string(&AccountCommand {action: "account_balance", account: account})?;
     
-    return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap())
+    return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
 }
 
 pub fn add_key_to_wallet(wallet: &str, key: &str) -> Result<(), Box<Error>> {
@@ -77,7 +92,28 @@ pub fn add_key_to_wallet(wallet: &str, key: &str) -> Result<(), Box<Error>> {
 
     match call_node(json_command) {
         Ok(_) => Ok(()),
-        Err(e) => Err(e)
+        Err(e) => return Err(e)
+    }
+}
+
+// pub fn convert_raw_to_mrai(raw_amount: String) -> Result<String, Box<Error>> {
+//     let json_command: String = serde_json::to_string(&ConversionCommand {action: "mrai_from_raw", amount: raw_amount})?;
+
+//     return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
+// }
+
+// pub fn convert_raw_from_mrai(mrai_amount: String) -> Result<String, Box<Error>> {
+//     let json_command: String = serde_json::to_string(&ConversionCommand {action: "mrai_to_raw", amount: mrai_amount})?;
+
+//     return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
+// }
+
+pub fn send(from_wallet: &String, from_account: &String, to_account: &String, amount: &str) -> Result<(), Box<Error>> {
+    let json_command: String = serde_json::to_string(&SendCommand {action: "send", wallet: from_wallet.to_owned(), source: from_account.to_owned(), destination: to_account.to_owned(), amount: amount.to_string()})?;
+
+    match call_node(json_command) {
+        Ok(_) => Ok(()),
+        Err(e) => return Err(e)
     }
 }
 
