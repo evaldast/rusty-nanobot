@@ -211,15 +211,6 @@ fn remove_bot_name_from_text(text: &str) -> &str {
 }
 
 fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static str {
-    let has_account: bool = match db::get_account(db_conn, user_email) {
-        Ok(_) => true,
-        Err(_) => false
-    };
-
-    if has_account {
-        return "It seems that you already own an account";
-    };
-
     let wallet: node::Wallet = match node::create_new_wallet() {
         Ok(w) => w,
         Err(_) => return "An error has occured attempting to create a wallet"
@@ -239,8 +230,32 @@ fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static
     }
 }
 
+fn try_get_account(user_email: &str, db_conn: &Mutex<Connection>) -> Result<Account, String> {
+    let has_account: bool = match db::get_account(db_conn, user_email) {
+        Ok(_) => true,
+        Err(_) => false
+    };
+
+    if !has_account {
+        return match try_create_account(&user_email, db_conn) {
+            "Account has been succesfully created, to check your balance type `!balance`" => {
+                return match db::get_account(db_conn, user_email) {
+                    Ok(a) => Ok(a),
+                    Err(_) => Err("An error has occured".to_string())
+                }
+            },
+            _ => Err("An error has occured".to_string())
+        }
+    };
+
+    return match db::get_account(db_conn, user_email) {
+        Ok(a) => Ok(a),
+        Err(_) => Err("An error has occured".to_string())
+    }
+}
+
 fn get_balance(user_email: &str, db_conn: &Mutex<Connection>) -> ResponseMessage {
-    let acc:Account = match db::get_account(db_conn, user_email) {
+    let acc:Account = match try_get_account(user_email, db_conn) {
         Ok(a) => a,
         Err(_) => return ResponseMessage { text: Some("An error has occured fetching the account".to_string()), cards: None }
     };
@@ -263,7 +278,7 @@ fn get_balance(user_email: &str, db_conn: &Mutex<Connection>) -> ResponseMessage
 }
 
 fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
-    let acc:Account = match db::get_account(db_conn, &user.email) {
+    let acc:Account = match try_get_account(&user.email, db_conn) {
         Ok(a) => a,
         Err(_) => return ResponseMessage { text: Some("There was an error fetching the account".to_string()), cards: None }
     };
@@ -286,7 +301,7 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
 fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
     let tip_args: (&str, &str) = parse_tip_arguments(text_args);
     
-    let acc:Account = match db::get_account(db_conn, tip_args.0) {
+    let acc:Account = match try_get_account(tip_args.0, db_conn) {
         Ok(a) => a,
         Err(_) => return ResponseMessage { text: Some("There was an error fetching the account".to_string()), cards: None }
     };
@@ -316,12 +331,12 @@ fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
 
     email = match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(email) {
         true => email,
-        false => "asd"
+        false => "error"
     };
 
     amount = match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(amount) {
         true => amount,
-        false => "wasd"
+        false => "error"
     };
 
     println!("{} {}", email, amount);
