@@ -205,10 +205,14 @@ fn parse_text(text: &str, user: Sender, db_conn: &Mutex<Connection>) -> Response
 
 fn remove_bot_name_from_text(text: &str) -> &str {
     println!("{}", text);
-    match text.trim().starts_with("@") {
+    let txt = match text.trim().starts_with("@") {
         true => text.split("@Rusty Nanobot").nth(1).unwrap(),
         false => text,
-    }
+    };
+
+    println!("{}", txt);
+
+    return txt;
 }
 
 fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static str {
