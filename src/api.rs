@@ -9,6 +9,13 @@ use node::{Account, Balance};
 use serde::ser::{Serialize, Serializer, SerializeStruct};
 use std::any::Any;
 use regex::Regex;
+use hyper::Client;
+use futures::{Future, Stream};
+use hyper::{Method, Request, Chunk};
+use tokio_core::reactor::Core;
+use std::error::Error;
+use serde_json;
+use hyper::Uri;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -187,7 +194,17 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
 
 #[get("/")]
 fn moo() -> Json<ResponseMessage> {
-    Json(ResponseMessage { text: Some("swx".to_owned()), cards: None })
+    let url = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR";
+
+    let url = url.parse().unwrap();
+    println!("{:?}", url);
+
+    let mut core = Core::new().unwrap();
+    let client = Client::new(&core.handle());
+    let res = client.get(url);
+    println!("{:?}", res);
+
+    Json(ResponseMessage { text: Some("swx".to_string()), cards: None })
 }
 
 fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
@@ -261,23 +278,34 @@ fn try_get_account(user_email: &str, db_conn: &Mutex<Connection>) -> Result<Acco
 }
 
 fn get_balance(user_email: &str, db_conn: &Mutex<Connection>) -> ResponseMessage {
-    let acc:Account = match try_get_account(user_email, db_conn) {
+    let acc: Account = match try_get_account(user_email, db_conn) {
         Ok(a) => a,
         Err(_) => return ResponseMessage { text: Some("An error has occured fetching the account".to_string()), cards: None }
     };
 
-    let bal:Balance = match node::get_balance(acc.account) {
+    let bal: Balance = match node::get_balance(acc.account) {
         Ok(b) => b,
         Err(_) => return ResponseMessage { text: Some("An error has occured fetching the balance".to_string()), cards: None }
     };
+
+    let converted_balances: (String, String) = (
+        match convert_raw_to_nano(&bal.balance) {
+            Ok(b) => b.to_string(),
+            Err(_) => return ResponseMessage { text: Some("An error has occured converting the balance".to_string()), cards: None }
+        },
+        match convert_raw_to_nano(&bal.pending) {
+            Ok(p) => p.to_string(),
+            Err(_) => return ResponseMessage { text: Some("An error has occured fetching the balance".to_string()), cards: None } 
+        }
+    );
 
     ResponseMessage { 
             text: None, 
             cards: Some(
                 vec![Card { sections: vec![
                     Section { header: "Balance".to_string(), widgets: vec![
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Current".to_string(), content: bal.balance } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Pending".to_string(), content: bal.pending } })
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Current".to_string(), content: format!("{} NANO, €", converted_balances.0) } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Pending".to_string(), content: format!("{} NANO, €", converted_balances.1) } })
                          ]}
                     ]}])
             }
@@ -365,6 +393,35 @@ fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
     };
 
     Ok((email, amount))
+}
+
+fn convert_raw_to_nano(raw_amount: &str) -> Result<u128, String> {
+    match u128::from_str_radix(raw_amount, 10) {
+        Ok(a) => Ok(a / 1_000_000_000_000_000_000_000_000),
+        Err(_) => Err("Error converting raw to nano".to_string())
+    } 
+}
+
+fn convert_raw_from_nano(nano_amount: &str) -> Result<u128, String> {
+    match u128::from_str_radix(nano_amount, 10) {
+        Ok(a) => Ok(a * 1_000_000_000_000_000_000_000_000),
+        Err(_) => Err("Error converting nano to raw".to_string())
+    } 
+}
+
+fn get_nano_price_in_euros() -> Result<Chunk, Box<Error>> {
+    let mut core = Core::new()?;
+    let client = Client::new(&core.handle());
+    let uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse()?;
+    let req = Request::new(Method::Get, uri);
+
+    let post = client.request(req).and_then(|res| {
+        res.body().concat2()
+    });
+
+    let response = core.run(post).unwrap();
+
+    Ok(response)
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {

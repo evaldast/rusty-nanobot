@@ -54,12 +54,6 @@ struct WalletCommand {
     key: String
 }
 
-// #[derive(Serialize)]
-// struct ConversionCommand {
-//     action: &'static str,
-//     amount: String
-// }
-
 #[derive(Serialize)] 
 struct SendCommand {
     action: &'static str,
@@ -95,18 +89,6 @@ pub fn add_key_to_wallet(wallet: &str, key: &str) -> Result<(), Box<Error>> {
         Err(e) => Err(e)
     }
 }
-
-// pub fn convert_raw_to_mrai(raw_amount: String) -> Result<String, Box<Error>> {
-//     let json_command: String = serde_json::to_string(&ConversionCommand {action: "mrai_from_raw", amount: raw_amount})?;
-
-//     return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
-// }
-
-// pub fn convert_raw_from_mrai(mrai_amount: String) -> Result<String, Box<Error>> {
-//     let json_command: String = serde_json::to_string(&ConversionCommand {action: "mrai_to_raw", amount: mrai_amount})?;
-
-//     return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
-// }
 
 pub fn send(from_wallet: &str, from_account: &str, to_account: &str, amount: &str) -> Result<(), Box<Error>> {
     let json_command: String = serde_json::to_string(&SendCommand {action: "send", wallet: from_wallet.to_string(), source: from_account.to_string(), destination: to_account.to_string(), amount: amount.to_string()})?;

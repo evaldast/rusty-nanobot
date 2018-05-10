@@ -1,9 +1,26 @@
 [development]
+address = "localhost"
+port = 8000
+# workers = [number of cpus * 2]
+log = "normal"
+# secret_key = [randomly generated at launch]
+limits = { forms = 32768 }
+
+[staging]
 address = "192.168.0.101"
 port = 1337
-workers = 1
-keep_alive = 5
+# workers = [number of cpus * 2]
 log = "normal"
+# secret_key = [randomly generated at launch]
+limits = { forms = 32768 }
+
+[production]
+address = "192.168.0.101"
+port = 1337
+# workers = [number of cpus * 2]
+log = "critical"
+# secret_key = [randomly generated at launch]
+limits = { forms = 32768 }
 
 
 
