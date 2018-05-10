@@ -326,17 +326,25 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
 
 fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
     let mut args = text_args.split_whitespace();
-    let mut email: &str = args.nth(1).unwrap();
-    let mut amount: &str = args.next().unwrap();
 
-    email = match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(email) {
-        true => email,
-        false => return Err("Could not parse email address. Must have @visma.com format".to_string())
+    let email: &str = match args.nth(1) {
+        Some(a) => {
+            match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(a) {
+                true => a,
+                false => return Err("Could not parse email address. Must have @visma.com format".to_string())
+            }
+        },
+        _ => return Err("No email supplied".to_string())
     };
 
-    amount = match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(amount) {
-        true => amount,
-        false => return Err("Could not parse amount".to_string())
+    let amount: &str = match args.next() {
+        Some(a) => {
+            match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(a) {
+                true => a,
+                false => return Err("Could not parse amount".to_string())
+            }
+        },
+        _ => return Err("No amount supplied".to_string())
     };
 
     println!("{} {}", email, amount);
