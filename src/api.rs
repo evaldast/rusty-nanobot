@@ -191,7 +191,7 @@ fn moo() -> Json<ResponseMessage> {
 }
 
 fn parse_text(text: &str, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
-    return match remove_bot_name_from_text(text) {
+    return match remove_bot_name_from_text(text).trim() {
         "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit` `!tip receiver_email amount`".to_string()), cards: None },
         "!create_account" => ResponseMessage { text: Some(try_create_account(&user.email, &db_conn).to_string()), cards: None },
         "!balance" => get_balance(&user.email, &db_conn),
