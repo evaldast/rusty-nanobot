@@ -192,13 +192,18 @@ fn moo() -> Json<ResponseMessage> {
 
 fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
     match remove_bot_name_from_text(text).trim() {
-        "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit` `!tip receiver_email amount`".to_string()), cards: None },
-        "!create_account" => ResponseMessage { text: Some(try_create_account(&user.email, &db_conn).to_string()), cards: None },
+        "!help" => ResponseMessage { text: Some("Available commands: `!balance` `!deposit` `!tip receiver_email amount` `!withdraw wallet_address`".to_string()), cards: None },        
         "!balance" => get_balance(&user.email, &db_conn),
         "!deposit" => get_deposit_response(&user, db_conn),
         t => if t.starts_with("!tip") { 
-                try_tip(&db_conn, &t, &user.email) } 
-            else { ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None } }
+                try_tip(&db_conn, &t, &user.email)
+            }
+            else if t.starts_with("!withdraw") {
+                ResponseMessage { text: Some("Not implemented yet".to_string()), cards: None }
+            } 
+            else {
+                ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
+            }
     }
 }
 
