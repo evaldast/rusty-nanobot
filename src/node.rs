@@ -72,19 +72,19 @@ struct SendCommand {
 pub fn create_new_key() -> Result<Key, Box<Error>> {
     let json_command: String = serde_json::to_string(&BasicCommand {action: "key_create"})?;
 
-    return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
+    Ok(serde_json::from_slice(&call_node(json_command)?).unwrap())
 }
 
 pub fn create_new_wallet() -> Result<Wallet, Box<Error>> {
     let json_command: String = serde_json::to_string(&BasicCommand {action: "wallet_create"})?;
 
-    return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
+    Ok(serde_json::from_slice(&call_node(json_command)?).unwrap())
 }
 
 pub fn get_balance(account: String) -> Result<Balance, Box<Error>> {
     let json_command: String = serde_json::to_string(&AccountCommand {action: "account_balance", account: account})?;
     
-    return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
+    Ok(serde_json::from_slice(&call_node(json_command)?).unwrap())
 }
 
 pub fn add_key_to_wallet(wallet: &str, key: &str) -> Result<(), Box<Error>> {
@@ -92,7 +92,7 @@ pub fn add_key_to_wallet(wallet: &str, key: &str) -> Result<(), Box<Error>> {
 
     match call_node(json_command) {
         Ok(_) => Ok(()),
-        Err(e) => return Err(e)
+        Err(e) => Err(e)
     }
 }
 
@@ -108,12 +108,12 @@ pub fn add_key_to_wallet(wallet: &str, key: &str) -> Result<(), Box<Error>> {
 //     return Ok(serde_json::from_slice(&call_node(json_command)?).unwrap());
 // }
 
-pub fn send(from_wallet: &String, from_account: &String, to_account: &String, amount: &str) -> Result<(), Box<Error>> {
-    let json_command: String = serde_json::to_string(&SendCommand {action: "send", wallet: from_wallet.to_owned(), source: from_account.to_owned(), destination: to_account.to_owned(), amount: amount.to_string()})?;
+pub fn send(from_wallet: &str, from_account: &str, to_account: &str, amount: &str) -> Result<(), Box<Error>> {
+    let json_command: String = serde_json::to_string(&SendCommand {action: "send", wallet: from_wallet.to_string(), source: from_account.to_string(), destination: to_account.to_string(), amount: amount.to_string()})?;
 
     match call_node(json_command) {
         Ok(_) => Ok(()),
-        Err(e) => return Err(e)
+        Err(e) => Err(e)
     }
 }
 
@@ -133,5 +133,5 @@ fn call_node(json_command: String) -> Result<Chunk, Box<Error>> {
 
     let response = core.run(post).unwrap();
 
-    return Ok(response);
+    Ok(response)
 }

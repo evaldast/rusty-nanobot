@@ -127,7 +127,7 @@ trait Widget {
 impl Serialize for Box<Widget> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> 
         where S: Serializer {
-            return match self.as_any().downcast_ref::<ImageWidget>() {
+            match self.as_any().downcast_ref::<ImageWidget>() {
                 Some(res) => {
                         let mut widget_serializer = serializer.serialize_struct("ImageWidget", 1)?;
                         widget_serializer.serialize_field("image", &res.image)?;
@@ -145,7 +145,7 @@ impl Serialize for Box<Widget> {
 
                     widget_serializer.end()  
                 }
-            };                
+            }                
         }
 }
 
@@ -168,51 +168,47 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
 
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
-            return Json(ResponseMessage {
+            Json(ResponseMessage {
                 text: Some(format!("Hello and thanks for adding me, *{}*. For help type `!help`", event.0.user.display_name)),
                 cards: None
             })
         }
         "MESSAGE" => { 
-            return Json(parse_text(&event.0.message.text, event.0.user, &db_conn))
+            Json(parse_text(&event.0.message.text, &event.0.user, &db_conn))
             }
         _ => {
-            return Json(ResponseMessage {
+            Json(ResponseMessage {
                 text: Some("Unsupported event".to_string()),
                 cards: None
             })
         }
-    };
+    }
 }
 
 #[get("/")]
 fn moo() -> Json<ResponseMessage> {
-    return Json(ResponseMessage { text: Some("swx".to_owned()), cards: None });
+    Json(ResponseMessage { text: Some("swx".to_owned()), cards: None })
 }
 
-fn parse_text(text: &str, user: Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
-    return match remove_bot_name_from_text(text).trim() {
+fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
+    match remove_bot_name_from_text(text).trim() {
         "!help" => ResponseMessage { text: Some("Available commands: `!help` `!create_account` `!balance` `!deposit` `!tip receiver_email amount`".to_string()), cards: None },
         "!create_account" => ResponseMessage { text: Some(try_create_account(&user.email, &db_conn).to_string()), cards: None },
         "!balance" => get_balance(&user.email, &db_conn),
         "!deposit" => get_deposit_response(&user, db_conn),
-        t => match t.starts_with("!tip") {
-            true => try_tip(&db_conn, &t, &user.email),
-            false => ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None }
-        }
-    };
+        t => if t.starts_with("!tip") { 
+                try_tip(&db_conn, &t, &user.email) } 
+            else { ResponseMessage { text: Some(format!("Did not quite catch that, *{}*, type `!help` for help", user.display_name)), cards: None } }
+    }
 }
 
 fn remove_bot_name_from_text(text: &str) -> &str {
-    println!("{}", text);
-    let txt = match text.trim().starts_with("@") {
-        true => text.split("@Rusty Nanobot").nth(1).unwrap(),
-        false => text,
-    };
-
-    println!("{}", txt);
-
-    return txt;
+    if text.trim().starts_with("@Rusty Nanobot") {
+        text.split("@Rusty Nanobot").nth(1).unwrap()
+    }
+    else {
+        text
+    }
 }
 
 fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static str {
@@ -227,7 +223,7 @@ fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static
     };
 
     match node::add_key_to_wallet(&wallet.wallet, &key.private) {
-        Ok(_) => match db::add_account(db_conn, &key, String::from(&*user_email), wallet.wallet) {
+        Ok(_) => match db::add_account(db_conn, &key, user_email, &wallet.wallet) {
             Ok(_) => "Account has been succesfully created, to check your balance type `!balance`",
             Err(_) => "An error has occured attempting to create an account"
         },
@@ -253,7 +249,7 @@ fn try_get_account(user_email: &str, db_conn: &Mutex<Connection>) -> Result<Acco
         }
     };
 
-    return match db::get_account(db_conn, user_email) {
+    match db::get_account(db_conn, user_email) {
         Ok(a) => Ok(a),
         Err(_) => Err("An error has occured".to_string())
     }
@@ -274,7 +270,7 @@ fn get_balance(user_email: &str, db_conn: &Mutex<Connection>) -> ResponseMessage
             text: None, 
             cards: Some(
                 vec![Card { sections: vec![
-                    Section { header: format!("Balance"), widgets: vec![
+                    Section { header: "Balance".to_string(), widgets: vec![
                          Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Current".to_string(), content: bal.balance } }),
                          Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Pending".to_string(), content: bal.pending } })
                          ]}
@@ -292,11 +288,11 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
             text: None, 
             cards: Some(
                 vec![Card { sections: vec![
-                    Section { header: format!("Deposit"), widgets: vec![
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}", user.email) } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", acc.account) } })
+                    Section { header: "Deposit".to_string(), widgets: vec![
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "To".to_string(), content: user.email.to_owned() } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Wallet".to_string(), content: acc.account.to_owned() } })
                          ]},
-                    Section { header: format!("Scan QR Code using Nano mobile wallet"), widgets: vec![ 
+                    Section { header: "Scan QR Code using Nano mobile wallet".to_string(), widgets: vec![ 
                         Box::new(ImageWidget { image: Image { image_url: format!("https://api.qrserver.com/v1/create-qr-code/?data={}", acc.account) } })
                         ]}
                     ]}])
@@ -319,16 +315,16 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str, sender_email: &str) -> 
         Err(_) => return ResponseMessage {text: Some("There was an error fetching the sender account".to_string()), cards: None}
     };
 
-    return match node::send(&sender_acc.wallet, &sender_acc.account, &receiver_acc.account, tip_args.1) {
+    match node::send(&sender_acc.wallet, &sender_acc.account, &receiver_acc.account, tip_args.1) {
         Ok(_) => ResponseMessage { 
             text: None, 
             cards: Some(
                 vec![Card { sections: vec![
-                    Section { header: format!("Tip sent!"), widgets: vec![
-                        Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("From"), content: format!("{}", sender_email) } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("To"), content: format!("{}", tip_args.0) } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Wallet"), content: format!("{}", receiver_acc.account) } }),
-                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: format!("Amount"), content: format!("{}", tip_args.1) } })
+                    Section { header: "Tip sent!".to_string(), widgets: vec![
+                        Box::new(KeyValueWidget { key_value: KeyValue { top_label: "From".to_string(), content: sender_email.to_owned() } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "To".to_string(), content: tip_args.0.to_owned() } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Wallet".to_string(), content: receiver_acc.account.to_owned() } }),
+                         Box::new(KeyValueWidget { key_value: KeyValue { top_label: "Amount".to_string(), content: tip_args.1.to_owned() } })
                          ]}
                     ]}])
             },
@@ -341,9 +337,11 @@ fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
 
     let email: &str = match args.nth(1) {
         Some(a) => {
-            match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(a) {
-                true => a,
-                false => return Err("Could not parse email address. Must have @visma.com format".to_string())
+            if Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(a) {
+                a 
+            } 
+            else {
+                return Err("Could not parse email address. Must have @visma.com format".to_string())
             }
         },
         _ => return Err("No email supplied".to_string())
@@ -351,17 +349,17 @@ fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
 
     let amount: &str = match args.next() {
         Some(a) => {
-            match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(a) {
-                true => a,
-                false => return Err("Could not parse amount".to_string())
+            if Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(a) {
+                a
+            } 
+            else {
+                return Err("Could not parse amount".to_string())
             }
         },
         _ => return Err("No amount supplied".to_string())
     };
 
-    println!("{} {}", email, amount);
-
-    return Ok((email, amount));
+    Ok((email, amount))
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {

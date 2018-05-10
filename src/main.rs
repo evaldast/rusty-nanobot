@@ -1,5 +1,7 @@
 #![feature(plugin, decl_macro)]
 #![plugin(rocket_codegen)]
+#![allow(unknown_lints)]
+#![warn(clippy)]
 
 #[macro_use]
 extern crate serde_derive;
