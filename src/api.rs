@@ -299,7 +299,10 @@ fn get_deposit_response(user: &Sender, db_conn: &Mutex<Connection>) -> ResponseM
 }
 
 fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
-    let tip_args: (&str, &str) = parse_tip_arguments(text_args);
+    let tip_args: (&str, &str) = match parse_tip_arguments(text_args) {
+        Ok(a) => a,
+        Err(e) => return ResponseMessage { text: Some(e), cards: None }
+    };
     
     let acc:Account = match try_get_account(tip_args.0, db_conn) {
         Ok(a) => a,
@@ -321,27 +324,24 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str) -> ResponseMessage {
             }
 }
 
-fn parse_tip_arguments(text_args: &str) -> (&str, &str) {
-    println!("{}", text_args);
+fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
     let mut args = text_args.split_whitespace();
     let mut email: &str = args.nth(1).unwrap();
-    println!("{}", email);
     let mut amount: &str = args.next().unwrap();
-    println!("{} {}", email, amount);
 
     email = match Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(email) {
         true => email,
-        false => "error"
+        false => return Err("Could not parse email address. Must have @visma.com format".to_string())
     };
 
     amount = match Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(amount) {
         true => amount,
-        false => "error"
+        false => return Err("Could not parse amount".to_string())
     };
 
     println!("{} {}", email, amount);
 
-    return (email, amount);
+    return Ok((email, amount));
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
