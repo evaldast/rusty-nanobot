@@ -82,7 +82,7 @@ pub fn create_new_wallet() -> Result<Wallet, Box<Error>> {
 }
 
 pub fn get_balance(account: String) -> Result<Balance, Box<Error>> {
-    let json_command: String = serde_json::to_string(&AccountCommand {action: "account_balance", account: account})?;
+    let json_command: String = serde_json::to_string(&AccountCommand {action: "account_balance", account})?;
     
     Ok(serde_json::from_slice(&call_node(json_command)?).unwrap())
 }
