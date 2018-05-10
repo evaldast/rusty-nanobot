@@ -54,11 +54,11 @@ struct WalletCommand {
     key: String
 }
 
-#[derive(Serialize)]
-struct ConversionCommand {
-    action: &'static str,
-    amount: String
-}
+// #[derive(Serialize)]
+// struct ConversionCommand {
+//     action: &'static str,
+//     amount: String
+// }
 
 #[derive(Serialize)] 
 struct SendCommand {
