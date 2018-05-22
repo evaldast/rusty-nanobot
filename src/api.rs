@@ -190,7 +190,7 @@ struct CoinmarketcapData {
 
 #[derive(Deserialize)]
 struct CoinmarketcapMetadata {
-    timestamp: String,
+    timestamp: u64,
     error: String
 }
 
