@@ -195,19 +195,15 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
 
 #[get("/")]
 fn moo() -> Json<Value> {
-//    let url = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR";
-//
-//    let url = url.parse().unwrap();
-
     let mut core = Core::new().unwrap();
     let client = Client::new(&core.handle());
 
-    let uri = "http://httpbin.org/ip".parse().unwrap();
+    let uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse().unwrap();
     let work = client.get(uri).and_then(|res| {
 
         res.body().concat2().and_then(move |body| {
             let v: Value = serde_json::from_slice(&body).unwrap();
-            println!("current IP address is {}", v["origin"]);
+            println!("{}", v["quotes"]);
             Ok(())
         })
     });
