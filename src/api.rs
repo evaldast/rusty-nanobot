@@ -196,8 +196,8 @@ struct CoinmarketcapMetadata {
 
 #[derive(Deserialize)]
 struct CoinmarketcapQuotes {
-    usd: CoinmarketcapQuote,
-    eur: CoinmarketcapQuote
+    USD: CoinmarketcapQuote,
+    EUR: CoinmarketcapQuote
 }
 
 #[derive(Deserialize)]
