@@ -188,7 +188,7 @@ struct CoinmarketcapData {
     last_updated: u64
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 struct CoinmarketcapMetadata {
     timestamp: u64,
     error: String
