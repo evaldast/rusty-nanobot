@@ -12,6 +12,7 @@ extern crate rocket;
 extern crate rocket_contrib;
 extern crate futures;
 extern crate hyper;
+extern crate hyper_tls;
 extern crate tokio_core;
 extern crate rusqlite;
 extern crate regex;
