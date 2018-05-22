@@ -171,7 +171,7 @@ impl Widget for KeyValueWidget {
 #[derive(Deserialize)]
 struct CoinmarketcapInfo {
     data: CoinmarketcapData,
-    meta: CoinmarketcapMetadata
+    metadata: CoinmarketcapMetadata
 }
 
 #[derive(Deserialize)]
