@@ -204,7 +204,7 @@ struct CoinmarketcapQuotes {
 struct CoinmarketcapQuote {
     price: f32,
     volume_24h: f64,
-    market_cap: u64,
+    market_cap: f64,
     percent_change_1h: f32,
     percent_change_24h: f32,
     percent_change_7d: f32
