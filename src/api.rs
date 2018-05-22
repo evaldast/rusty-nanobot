@@ -15,7 +15,6 @@ use hyper::{Method, Request, Chunk};
 use tokio_core::reactor::Core;
 use std::error::Error;
 use serde_json;
-use hyper::Uri;
 use serde_json::Value;
 
 #[derive(Deserialize, Debug)]
@@ -169,6 +168,48 @@ impl Widget for KeyValueWidget {
     }
 }
 
+#[derive(Deserialize)]
+struct CoinmarketcapInfo {
+    data: CoinmarketcapData,
+    meta: CoinmarketcapMetadata
+}
+
+#[derive(Deserialize)]
+struct CoinmarketcapData {
+    id: u16,
+    name: String,
+    symbol: String,
+    website_slug: String,
+    rank: u16,
+    circulating_supply: u64,
+    total_supply: u64,
+    max_supply: u64,
+    quotes: CoinmarketcapQuotes,
+    last_updated: u64
+}
+
+#[derive(Deserialize)]
+struct CoinmarketcapMetadata {
+    timestamp: String,
+    error: String
+}
+
+#[derive(Deserialize)]
+struct CoinmarketcapQuotes {
+    usd: CoinmarketcapQuote,
+    eur: CoinmarketcapQuote
+}
+
+#[derive(Deserialize)]
+struct CoinmarketcapQuote {
+    price: f32,
+    volume_24h: f64,
+    market_cap: u64,
+    percent_change_1h: f32,
+    percent_change_24h: f32,
+    percent_change_7d: f32
+}
+
 
 #[post("/hello", format = "application/json", data = "<event>")]
 fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
@@ -203,10 +244,9 @@ fn moo() -> Json<Value> {
 
     let uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse().unwrap();
     let work = client.get(uri).and_then(|res| {
-
         res.body().concat2().and_then(move |body| {
-            let v: Value = serde_json::from_slice(&body).unwrap();
-            println!("current IP address is {}", v["quotes"]);
+            let v: CoinmarketcapInfo = serde_json::from_slice(&body).unwrap();
+            println!("current IP address is {}", v.data.last_updated);
             Ok(())
         })
     });
