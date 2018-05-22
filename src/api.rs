@@ -181,9 +181,9 @@ struct CoinmarketcapData {
     symbol: String,
     website_slug: String,
     rank: u16,
-    circulating_supply: u64,
-    total_supply: u64,
-    max_supply: u64,
+    circulating_supply: f64,
+    total_supply: f64,
+    max_supply: f64,
     quotes: CoinmarketcapQuotes,
     last_updated: u64
 }
