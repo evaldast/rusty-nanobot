@@ -16,6 +16,7 @@ use tokio_core::reactor::Core;
 use std::error::Error;
 use serde_json;
 use hyper::Uri;
+use serde_json::Value;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -193,18 +194,27 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
 }
 
 #[get("/")]
-fn moo() -> Json<ResponseMessage> {
-    let url = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR";
-
-    let url = url.parse().unwrap();
-    println!("{:?}", url);
+fn moo() -> Json<Value> {
+//    let url = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR";
+//
+//    let url = url.parse().unwrap();
 
     let mut core = Core::new().unwrap();
     let client = Client::new(&core.handle());
-    let res = client.get(url);
-    println!("{:?}", res);
 
-    Json(ResponseMessage { text: Some("swx".to_string()), cards: None })
+    let uri = "http://httpbin.org/ip".parse().unwrap();
+    let work = client.get(uri).and_then(|res| {
+
+        res.body().concat2().and_then(move |body| {
+            let v: Value = serde_json::from_slice(&body).unwrap();
+            println!("current IP address is {}", v["origin"]);
+            Ok(())
+        })
+    });
+
+    Json(json!(core.run(work).unwrap()))
+
+    //Json(ResponseMessage { text: Some("swx".to_string()), cards: None })
 }
 
 fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
