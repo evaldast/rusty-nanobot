@@ -306,10 +306,10 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) -> Json<TeamsResponse> {
+fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) -> TeamsResponse {
     println!("{:?}", &activity.0);
     //auajFVRL55[[pylEWN522*!
-    Json(TeamsResponse {response_type: "message".to_string(), from: From { id: "".to_string(), name: "rusty".to_string()}, conversation: Conversation {id: "".to_string(), name: "rusty".to_string()}, recipient: Recipient {id: "".to_string(), name: "rusty".to_string()}, text: "ttt".to_string(), replyToId: "3333".to_string()})
+    TeamsResponse {response_type: "message".to_string(), from: From { id: "".to_string(), name: "rusty".to_string()}, conversation: Conversation {id: "".to_string(), name: "rusty".to_string()}, recipient: Recipient {id: "".to_string(), name: "rusty".to_string()}, text: "ttt".to_string(), replyToId: "3333".to_string()}
 }
 
 #[get("/")]
