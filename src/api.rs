@@ -212,8 +212,10 @@ struct CoinmarketcapQuote {
 
 #[derive(Deserialize, Debug)]
 struct Activity {
-    #[serde(rename = "keyValue")]
+    #[serde(rename = "type")]
     activity_type: String,
+
+    name: String,
 
     id: String,
     timestamp: String,
