@@ -16,6 +16,12 @@ use tokio_core::reactor::Core;
 use std::error::Error;
 use serde_json;
 use serde_json::Value;
+use hyper::header::{Headers, Authorization, Bearer};
+use rocket::outcome::{Outcome, IntoOutcome};
+use rocket::data::{self, Data, FromData};
+use rocket::response::{self, Responder, content};
+use rocket::http::Status;
+use rocket;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -232,7 +238,7 @@ struct Activity {
     text: String
 }
 
-#[derive(Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct From {
     id: String,
 
@@ -240,7 +246,7 @@ struct From {
     name: String
 }
 
-#[derive(Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct Conversation {
     id: String,
 
@@ -248,7 +254,7 @@ struct Conversation {
     name: String
 }
 
-#[derive(Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct Recipient {
     id: String,
 
@@ -256,6 +262,25 @@ struct Recipient {
     name: String
 }
 
+#[derive(Serialize)]
+struct TeamsResponse {
+    #[serde(rename = "type")]
+    response_type: String,
+
+    from: From,
+    conversation: Conversation,
+    recipient: Recipient,
+    text: String,
+    replyToId: String
+}
+
+impl<'r> Responder<'r> for TeamsResponse {
+    fn respond_to(self, _: &rocket::Request) -> response::Result<'r> {
+        rocket::Response::build()
+            .raw_header("Bearer", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayIsImtpZCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTUyNzU5OTcyOCwibmJmIjoxNTI3NTk5NzI4LCJleHAiOjE1Mjc2MDM2MjgsImFpbyI6IlkyZGdZT0JrM3ZIK1p1NzNMVElIRjY1MnZQeE5HQUE9IiwiYXBwaWQiOiI4ODc2ODYxNS01YjU4LTRjZDItYTZkOC1hNTFiYmVjMTAxMjYiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiY29HSDQxbENqRW1KdGtTTk1hSWhBQSIsInZlciI6IjEuMCJ9.GTexd5mOwaoGM-SpauELhWlZp7VFsEWqfvjB5sviQJK2pbDfzR56Bh8-6A9kirVXjP_EGOyxjvqduJPFRCm4OcuxyoN7Bnmdv9ye7rPJ7v0oOAR8FE3n33llDqJr5i55r7nAAl1NjyLrMiOPDGD4vX7s4kydzE6rAFU9G8ICckzJ-3rdE7dqqxCMWErVX-5h1se1nbJLfgCdTrgN6zBFdtwKlixoMNL2pV2Vj9VFjOeU7-tKYj6cM9GWL4l0EDTIvD_OjPURPuWhZ9BLIkw1w9hXERvZ5cdkG-JA0wmFggSRiOjTC7e0t8h0WZfGjHkBJjDXYJsmIaxbRfL4meS1Kw")
+            .ok()
+    }
+}
 
 #[post("/hangouts", format = "application/json", data = "<event>")]
 fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
@@ -281,9 +306,10 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) {
+fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) -> Json<TeamsResponse> {
     println!("{:?}", &activity.0);
     //auajFVRL55[[pylEWN522*!
+    Json(TeamsResponse {response_type: "message".to_string(), from: From { id: "".to_string(), name: "rusty".to_string()}, conversation: Conversation {id: "".to_string(), name: "rusty".to_string()}, recipient: Recipient {id: "".to_string(), name: "rusty".to_string()}, text: "ttt".to_string(), replyToId: "3333".to_string()})
 }
 
 #[get("/")]
