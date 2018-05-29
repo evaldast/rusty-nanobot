@@ -210,9 +210,42 @@ struct CoinmarketcapQuote {
     percent_change_7d: f32
 }
 
+#[derive(Deserialize, Debug)]
+struct Activity {
+    #[serde(rename = "keyValue")]
+    activity_type: String,
 
-#[post("/hello", format = "application/json", data = "<event>")]
-fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
+    id: String,
+    timestamp: String,
+    serviceUrl: String,
+    channelId: String,
+    from: From,
+    conversation: Conversation,
+    recipient: Recipient,
+    text: String
+}
+
+#[derive(Deserialize, Debug)]
+struct From {
+    id: String,
+    name: String
+}
+
+#[derive(Deserialize, Debug)]
+struct Conversation {
+    id: String,
+    name: String
+}
+
+#[derive(Deserialize, Debug)]
+struct Recipient {
+    id: String,
+    name: String
+}
+
+
+#[post("/hangouts", format = "application/json", data = "<event>")]
+fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
     //println!("{:?}", &event.0);
 
     match event.0.event_type.trim() {
@@ -232,6 +265,12 @@ fn post_json(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<Resp
             })
         }
     }
+}
+
+#[post("/teams", format = "application/json", data = "<activity>")]
+fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) {
+    println!("{:?}", &activity.0);
+    //auajFVRL55[[pylEWN522*!
 }
 
 #[get("/")]
@@ -476,5 +515,5 @@ fn get_nano_price_in_euros() -> Result<Chunk, Box<Error>> {
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
         .manage(db_conn)
-        .mount("/", routes![post_json, moo])
+        .mount("/", routes![handle_hangouts_message, handle_teams_message, moo])
 }
