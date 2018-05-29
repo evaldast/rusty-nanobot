@@ -246,8 +246,8 @@ fn moo() -> Json<Value> {
     let work = client.get(uri).and_then(|res| {
         res.body().concat2().and_then(move |body| {
             let v: CoinmarketcapInfo = serde_json::from_slice(&body).unwrap();
-            println!("current IP address is {}", v.data.last_updated);
-            Ok(())
+
+            return Ok(v)
         })
     });
 
