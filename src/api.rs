@@ -215,31 +215,36 @@ struct Activity {
     #[serde(rename = "type")]
     activity_type: String,
 
-    name: String,
-
     id: String,
     timestamp: String,
     serviceUrl: String,
     channelId: String,
+
+    #[serde(default)]
     from: From,
+
+    #[serde(default)]
     conversation: Conversation,
+
+    #[serde(default)]
     recipient: Recipient,
+    
     text: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 struct From {
     id: String,
     name: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 struct Conversation {
     id: String,
     name: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 struct Recipient {
     id: String,
     name: String
