@@ -251,9 +251,9 @@ fn moo() -> Json<Value> {
         })
     });
 
-    Json(json!(core.run(work).unwrap()))
+    let result: CoinmarketcapInfo = core.run(work).unwrap();
 
-    //Json(ResponseMessage { text: Some("swx".to_string()), cards: None })
+    Json(json!(result.data.quotes.EUR.price))
 }
 
 fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
