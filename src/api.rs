@@ -228,25 +228,31 @@ struct Activity {
 
     #[serde(default)]
     recipient: Recipient,
-    
+
     text: String
 }
 
 #[derive(Deserialize, Debug, Default)]
 struct From {
     id: String,
+
+    #[serde(default)]
     name: String
 }
 
 #[derive(Deserialize, Debug, Default)]
 struct Conversation {
     id: String,
+
+    #[serde(default)]
     name: String
 }
 
 #[derive(Deserialize, Debug, Default)]
 struct Recipient {
     id: String,
+
+    #[serde(default)]
     name: String
 }
 
