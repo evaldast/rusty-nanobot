@@ -316,7 +316,9 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     //auajFVRL55[[pylEWN522*!
 
     let mut core = Core::new().unwrap();
-    let client = Client::new(&core.handle());
+    let client = ::hyper::Client::configure()
+        .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
+        .build(&core.handle());
     let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
 
