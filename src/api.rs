@@ -16,13 +16,13 @@ use tokio_core::reactor::Core;
 use std::error::Error;
 use serde_json;
 use serde_json::Value;
-use hyper::header::{Headers, Authorization, Bearer};
 use rocket::outcome::{Outcome, IntoOutcome};
 use rocket::data::{self, Data, FromData};
 use rocket::response::{self, Responder, content};
 use rocket::http::Status;
 use rocket;
 use std::io::Cursor;
+use hyper::header::{ContentLength, ContentType, Authorization, Bearer};
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -311,10 +311,36 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) -> TeamsResponse {
+fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) {
     println!("{:?}", &activity.0);
     //auajFVRL55[[pylEWN522*!
-    TeamsResponse {response_type: "message".to_string(), from: From { id: "".to_string(), name: "rusty".to_string()}, conversation: Conversation {id: "".to_string(), name: "rusty".to_string()}, recipient: Recipient {id: "".to_string(), name: "rusty".to_string()}, text: "ttt".to_string(), replyToId: "3333".to_string()}
+
+    let mut core = Core::new().unwrap();
+    let client = Client::new(&core.handle());
+    let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
+    let mut req = Request::new(Method::Post, uri);
+
+    let teams_response = TeamsResponse {
+        response_type: "message".to_string(),
+        from: From { id: activity.0.recipient.id, name: activity.0.recipient.name },
+        conversation: Conversation { id: activity.0.conversation.id, name: activity.0.conversation.name },
+        recipient: Recipient { id: activity.0.from.id, name: activity.0.from.name },
+        text: "Hi from Rusty".to_string(),
+        replyToId: activity.0.id
+    };
+
+    let json = serde_json::to_string(&teams_response).unwrap();
+
+    req.headers_mut().set(ContentType::json());
+    req.headers_mut().set(ContentLength(json.len() as u64));
+    req.headers_mut().set(Authorization(Bearer { token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayIsImtpZCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTUyNzY2NDYzMiwibmJmIjoxNTI3NjY0NjMyLCJleHAiOjE1Mjc2Njg1MzIsImFpbyI6IlkyZGdZSmo3Mm5QV2pXbVRyeWpuZlpDTjI1WjJFQUE9IiwiYXBwaWQiOiI4ODc2ODYxNS01YjU4LTRjZDItYTZkOC1hNTFiYmVjMTAxMjYiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiZVliWlJkdXg3MGV4b2d1UW80Y25BQSIsInZlciI6IjEuMCJ9.CgsWDoXphCEkRHNlqj4jAtQX1nt7vYW8Dzr5gTTDqv6HWwQ5xU8AUtcrx4ZofyPJCQWPdzFhB7dbi_0XJyXgxt_1R2JjlqJV5Tkmvpu-navUAP-58epb0dzIpj6meM93_Dx_8RsLbXhfmxdkv8O5hhQW9WbL61OFNzCkq_3NlGn7Oe4OVNThe66Byt3iZ_OnpsWYZHqVz5wvZNhJCgtgvyi5xbNuL5wQykMPJrGsBfRpm71h8_2Jde5dwh3tdgaQYSWM7ftEt4D9Kg_5upPs4vHBw6K3gnGfBiLr4g3AusSAa2cCB6atZadBsSjH3pAZpmifGt4YFMRR3V_huX9_kQ".to_string() }));
+    req.set_body(json);
+
+    let post = client.request(req).and_then(|res| {
+        res.body().concat2()
+    });
+
+    core.run(post).unwrap();
 }
 
 #[get("/")]
