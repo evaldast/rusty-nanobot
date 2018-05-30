@@ -22,6 +22,7 @@ use rocket::data::{self, Data, FromData};
 use rocket::response::{self, Responder, content};
 use rocket::http::Status;
 use rocket;
+use std::io::Cursor;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -276,9 +277,12 @@ struct TeamsResponse {
 
 impl<'r> Responder<'r> for TeamsResponse {
     fn respond_to(self, _: &rocket::Request) -> response::Result<'r> {
-        rocket::Response::build()
-            .raw_header("Bearer", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayIsImtpZCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTUyNzU5OTcyOCwibmJmIjoxNTI3NTk5NzI4LCJleHAiOjE1Mjc2MDM2MjgsImFpbyI6IlkyZGdZT0JrM3ZIK1p1NzNMVElIRjY1MnZQeE5HQUE9IiwiYXBwaWQiOiI4ODc2ODYxNS01YjU4LTRjZDItYTZkOC1hNTFiYmVjMTAxMjYiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiY29HSDQxbENqRW1KdGtTTk1hSWhBQSIsInZlciI6IjEuMCJ9.GTexd5mOwaoGM-SpauELhWlZp7VFsEWqfvjB5sviQJK2pbDfzR56Bh8-6A9kirVXjP_EGOyxjvqduJPFRCm4OcuxyoN7Bnmdv9ye7rPJ7v0oOAR8FE3n33llDqJr5i55r7nAAl1NjyLrMiOPDGD4vX7s4kydzE6rAFU9G8ICckzJ-3rdE7dqqxCMWErVX-5h1se1nbJLfgCdTrgN6zBFdtwKlixoMNL2pV2Vj9VFjOeU7-tKYj6cM9GWL4l0EDTIvD_OjPURPuWhZ9BLIkw1w9hXERvZ5cdkG-JA0wmFggSRiOjTC7e0t8h0WZfGjHkBJjDXYJsmIaxbRfL4meS1Kw")
-            .ok()
+        let mut response = rocket::Response::new();
+
+        response.set_sized_body(Cursor::new(serde_json::to_string(&self).unwrap()));
+        response.set_raw_header("Bearer", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayIsImtpZCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTUyNzU5OTcyOCwibmJmIjoxNTI3NTk5NzI4LCJleHAiOjE1Mjc2MDM2MjgsImFpbyI6IlkyZGdZT0JrM3ZIK1p1NzNMVElIRjY1MnZQeE5HQUE9IiwiYXBwaWQiOiI4ODc2ODYxNS01YjU4LTRjZDItYTZkOC1hNTFiYmVjMTAxMjYiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiY29HSDQxbENqRW1KdGtTTk1hSWhBQSIsInZlciI6IjEuMCJ9.GTexd5mOwaoGM-SpauELhWlZp7VFsEWqfvjB5sviQJK2pbDfzR56Bh8-6A9kirVXjP_EGOyxjvqduJPFRCm4OcuxyoN7Bnmdv9ye7rPJ7v0oOAR8FE3n33llDqJr5i55r7nAAl1NjyLrMiOPDGD4vX7s4kydzE6rAFU9G8ICckzJ-3rdE7dqqxCMWErVX-5h1se1nbJLfgCdTrgN6zBFdtwKlixoMNL2pV2Vj9VFjOeU7-tKYj6cM9GWL4l0EDTIvD_OjPURPuWhZ9BLIkw1w9hXERvZ5cdkG-JA0wmFggSRiOjTC7e0t8h0WZfGjHkBJjDXYJsmIaxbRfL4meS1Kw");
+
+        Ok(response)
     }
 }
 
