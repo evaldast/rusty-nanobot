@@ -5,13 +5,13 @@ use rocket::State;
 use rocket_contrib::Json;
 use rusqlite::Connection;
 use std::sync::Mutex;
+use std::ops::Deref;
 use node::{Account, Balance};
 use serde::ser::{Serialize, Serializer, SerializeStruct};
 use std::any::Any;
 use regex::Regex;
-use hyper::Client;
 use futures::{Future, Stream};
-use hyper::{Method, Request, Chunk};
+use hyper::{Client, Method, Request, Chunk};
 use tokio_core::reactor::Core;
 use std::error::Error;
 use serde_json;
@@ -23,6 +23,8 @@ use rocket::http::Status;
 use rocket;
 use std::io::Cursor;
 use hyper::header::{ContentLength, ContentType, Authorization, Bearer};
+use chrono::prelude::*;
+use hyper_tls::HttpsConnector;
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -287,6 +289,34 @@ impl<'r> Responder<'r> for TeamsResponse {
     }
 }
 
+struct TeamsConfig {
+    client_id: String,
+    client_secret: String
+}
+
+struct TeamsToken {
+    token: String,
+    expire_date: DateTime<Utc>
+}
+
+#[derive(Deserialize, Debug)]
+struct TokenResponse {
+    token_type: String,
+    expires_in: u16,
+    ext_expires_in: u16,
+    access_token: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct TokenError {
+    error: String,
+    error_description: String,
+    error_codes: Vec<u16>,
+    timestamp: String,
+    trace_id: String,
+    correlation_id: String
+}
+
 #[post("/hangouts", format = "application/json", data = "<event>")]
 fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
     //println!("{:?}", &event.0);
@@ -311,8 +341,12 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>) {
+fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>, state: State<TeamsToken>) {
     println!("{:?}", &activity.0);
+
+    if state.expire_date <= Utc::now() {
+
+    }
     //auajFVRL55[[pylEWN522*!
 
     let mut core = Core::new().unwrap();
@@ -345,8 +379,38 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     core.run(post).unwrap();
 }
 
+fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
+    let mut guard = teams_token.lock().unwrap();
+    let value = guard.deref();
+
+    println!("current token: {}", value.token);
+
+    let mut core = Core::new().unwrap();
+    let client = Client::configure()
+        .connector(HttpsConnector::new(4, &core.handle()).unwrap())
+        .build(&core.handle());
+    let uri = "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token".parse().unwrap();
+    let mut req = Request::new(Method::Post, uri);
+
+    let body = "grant_type=client_credentials&client_id=88768615-5b58-4cd2-a6d8-a51bbec10126&client_secret=auajFVRL55[[pylEWN522*!&scope=https%3A%2F%2Fapi.botframework.com%2F.default";
+
+    //req.headers_mut().set(ContentType("application/x-www-form-encoded".parse().unwrap()));
+    req.headers_mut().set(ContentLength(body.len() as u64));
+    req.set_body(body);
+
+    let post = client.request(req).and_then(|res| {
+        res.body().concat2()
+    });
+
+    let response: TokenResponse = serde_json::from_slice(&core.run(post).unwrap()).unwrap();
+
+    println!("{} / {}", response.access_token, response.expires_in);
+}
+
 #[get("/")]
-fn moo() -> Json<Value> {
+fn moo(teams_token: State<Mutex<TeamsToken>>) -> Json<Value> {
+
+    refresh_teams_bearer_token(&teams_token);
 
     let mut core = Core::new().unwrap();
     let client = ::hyper::Client::configure()
@@ -587,5 +651,6 @@ fn get_nano_price_in_euros() -> Result<Chunk, Box<Error>> {
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
         .manage(db_conn)
+        .manage(Mutex::new(TeamsToken { token: "initial".to_string(), expire_date: Utc::now() }))
         .mount("/", routes![handle_hangouts_message, handle_teams_message, moo])
 }

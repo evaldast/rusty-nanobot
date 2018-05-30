@@ -16,6 +16,7 @@ extern crate hyper_tls;
 extern crate tokio_core;
 extern crate rusqlite;
 extern crate regex;
+extern crate chrono;
 
 mod api;
 mod db;
