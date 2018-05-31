@@ -667,6 +667,6 @@ fn get_nano_price_in_euros() -> Result<Chunk, Box<Error>> {
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
         .manage(db_conn)
-        .manage(Mutex::new("initial_token_value"))
+        .manage(Mutex::new(TeamsToken { token: "initial_token".to_string(), expire_date: Utc::now() }))
         .mount("/", routes![handle_hangouts_message, handle_teams_message, moo])
 }
