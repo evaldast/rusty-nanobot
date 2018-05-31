@@ -342,9 +342,13 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 
 #[post("/teams", format = "application/json", data = "<activity>")]
 fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>, state_teams_token: State<Mutex<TeamsToken>>) {
-    println!("{:?}", &activity.0);
+    //println!("{:?}", &activity.0);
+
+    println!("Step 1");
 
     refresh_teams_bearer_token(&state_teams_token);
+
+    println!("Refreshing token");
 
     let state = state_teams_token.lock().expect("Could not lock mutex");
     let teams_token = state.deref();
@@ -353,34 +357,42 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 
     //auajFVRL55[[pylEWN522*!
 
-    let mut core = Core::new().unwrap();
-    let client = ::hyper::Client::configure()
-        .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
-        .build(&core.handle());
-    let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
-    let mut req = Request::new(Method::Post, uri);
+    // let mut core = Core::new().unwrap();
+    // let client = ::hyper::Client::configure()
+    //     .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
+    //     .build(&core.handle());
+    //let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
+    //let mut req = Request::new(Method::Post, uri);
 
-    let teams_response = TeamsResponse {
-        response_type: "message".to_string(),
-        from: From { id: activity.0.recipient.id, name: activity.0.recipient.name },
-        conversation: Conversation { id: activity.0.conversation.id, name: activity.0.conversation.name },
-        recipient: Recipient { id: activity.0.from.id, name: activity.0.from.name },
-        text: "Hi from Rusty".to_string(),
-        replyToId: activity.0.id
-    };
+    // let teams_response = TeamsResponse {
+    //     response_type: "message".to_string(),
+    //     from: From { id: activity.0.recipient.id, name: activity.0.recipient.name },
+    //     conversation: Conversation { id: activity.0.conversation.id, name: activity.0.conversation.name },
+    //     recipient: Recipient { id: activity.0.from.id, name: activity.0.from.name },
+    //     text: "Hi from Rusty".to_string(),
+    //     replyToId: activity.0.id
+    // };
 
-    let json = serde_json::to_string(&teams_response).unwrap();
+    // let json = serde_json::to_string(&teams_response).unwrap();
 
-    req.headers_mut().set(ContentType::json());
-    req.headers_mut().set(ContentLength(json.len() as u64));
-    req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
-    req.set_body(json);
+    // req.headers_mut().set(ContentType::json());
+    // req.headers_mut().set(ContentLength(json.len() as u64));
+    // req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
+    // req.set_body(json);
 
-    let post = client.request(req).and_then(|res| {
-        res.body().concat2()
-    });
+    // let post = client.request(req).and_then(|res| {
+    //     res.body().concat2()
+    // });
 
-    core.run(post).unwrap();
+    // core.run(post).unwrap();
+
+    // let client = Client::new();
+
+    // let res = client.post("http://example.domain")
+    //     .body("foo=bar")
+    //     .send()
+    //     .unwrap();
+    println!("done");
 }
 
 fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
@@ -655,6 +667,6 @@ fn get_nano_price_in_euros() -> Result<Chunk, Box<Error>> {
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
     Rocket::ignite()
         .manage(db_conn)
-        .manage(Mutex::new(TeamsToken { token: "initial".to_string(), expire_date: Utc::now() }))
+        .manage(Mutex::new("initial_token_value"))
         .mount("/", routes![handle_hangouts_message, handle_teams_message, moo])
 }
