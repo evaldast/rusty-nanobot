@@ -387,6 +387,7 @@ fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
     let mut state = teams_token.lock().expect("Could not lock mutex");
 
     if state.deref().expire_date <= Utc::now() {
+        println!("Caught");
         return
     }
 
