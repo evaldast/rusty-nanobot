@@ -386,8 +386,7 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
     let mut state = teams_token.lock().expect("Could not lock mutex");
 
-    if state.deref().expire_date <= Utc::now() {
-        println!("Caught");
+    if state.deref().expire_date >= Utc::now() {
         return
     }
 
