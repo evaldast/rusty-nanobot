@@ -380,10 +380,10 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 }
 
 fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
-    let mut guard = teams_token.lock().unwrap();
-    let value = guard.deref();
+    let mut state = teams_token.lock().expect("Could not lock mutex");
+    //*state = TeamsToken { token: "mutated".to_string(), expire_date: Utc::now() };
 
-    println!("current token: {}", value.token);
+    println!("current token: {}", state.deref().token);
 
     let mut core = Core::new().unwrap();
     let client = Client::configure()
@@ -405,6 +405,8 @@ fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
     let response: TokenResponse = serde_json::from_slice(&core.run(post).unwrap()).unwrap();
 
     println!("{} / {}", response.access_token, response.expires_in);
+
+    *state = TeamsToken { token: "mutated".to_string(), expire_date: Utc::now() };
 }
 
 #[get("/")]
