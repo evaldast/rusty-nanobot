@@ -364,6 +364,8 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
 
+    println!("creating core and request");
+
     let teams_response = TeamsResponse {
         response_type: "message".to_string(),
         from: From { id: activity.0.recipient.id, name: activity.0.recipient.name },
@@ -375,14 +377,20 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 
     let json = serde_json::to_string(&teams_response).unwrap();
 
+    println!("creating teams response");
+
     req.headers_mut().set(ContentType::json());
     req.headers_mut().set(ContentLength(json.len() as u64));
     req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
     req.set_body(json);
 
+    println!("setting headers");
+
     let post = client.request(req).and_then(|res| {
         res.body().concat2()
     });
+
+    println!("creating post");
 
     core.run(post);
 
