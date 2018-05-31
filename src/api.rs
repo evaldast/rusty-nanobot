@@ -23,7 +23,7 @@ use rocket::http::Status;
 use rocket;
 use std::io::Cursor;
 use hyper::header::{ContentLength, ContentType, Authorization, Bearer};
-use chrono::prelude::*;
+use chrono::{Duration, Utc, DateTime};
 use hyper_tls::HttpsConnector;
 
 #[derive(Deserialize, Debug)]
@@ -341,12 +341,16 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>, state: State<TeamsToken>) {
+fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>, state_teams_token: State<Mutex<TeamsToken>>) {
     println!("{:?}", &activity.0);
 
-    if state.expire_date <= Utc::now() {
+    refresh_teams_bearer_token(&state_teams_token);
 
-    }
+    let state = state_teams_token.lock().expect("Could not lock mutex");
+    let teams_token = state.deref();
+
+    println!("{}", teams_token.token);
+
     //auajFVRL55[[pylEWN522*!
 
     let mut core = Core::new().unwrap();
@@ -369,7 +373,7 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 
     req.headers_mut().set(ContentType::json());
     req.headers_mut().set(ContentLength(json.len() as u64));
-    req.headers_mut().set(Authorization(Bearer { token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayIsImtpZCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTUyNzY2NDYzMiwibmJmIjoxNTI3NjY0NjMyLCJleHAiOjE1Mjc2Njg1MzIsImFpbyI6IlkyZGdZSmo3Mm5QV2pXbVRyeWpuZlpDTjI1WjJFQUE9IiwiYXBwaWQiOiI4ODc2ODYxNS01YjU4LTRjZDItYTZkOC1hNTFiYmVjMTAxMjYiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiZVliWlJkdXg3MGV4b2d1UW80Y25BQSIsInZlciI6IjEuMCJ9.CgsWDoXphCEkRHNlqj4jAtQX1nt7vYW8Dzr5gTTDqv6HWwQ5xU8AUtcrx4ZofyPJCQWPdzFhB7dbi_0XJyXgxt_1R2JjlqJV5Tkmvpu-navUAP-58epb0dzIpj6meM93_Dx_8RsLbXhfmxdkv8O5hhQW9WbL61OFNzCkq_3NlGn7Oe4OVNThe66Byt3iZ_OnpsWYZHqVz5wvZNhJCgtgvyi5xbNuL5wQykMPJrGsBfRpm71h8_2Jde5dwh3tdgaQYSWM7ftEt4D9Kg_5upPs4vHBw6K3gnGfBiLr4g3AusSAa2cCB6atZadBsSjH3pAZpmifGt4YFMRR3V_huX9_kQ".to_string() }));
+    req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
     req.set_body(json);
 
     let post = client.request(req).and_then(|res| {
@@ -381,9 +385,10 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 
 fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
     let mut state = teams_token.lock().expect("Could not lock mutex");
-    //*state = TeamsToken { token: "mutated".to_string(), expire_date: Utc::now() };
 
-    println!("current token: {}", state.deref().token);
+    if state.deref().expire_date <= Utc::now() {
+        return
+    }
 
     let mut core = Core::new().unwrap();
     let client = Client::configure()
@@ -394,7 +399,6 @@ fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
 
     let body = "grant_type=client_credentials&client_id=88768615-5b58-4cd2-a6d8-a51bbec10126&client_secret=auajFVRL55[[pylEWN522*!&scope=https%3A%2F%2Fapi.botframework.com%2F.default";
 
-    //req.headers_mut().set(ContentType("application/x-www-form-encoded".parse().unwrap()));
     req.headers_mut().set(ContentLength(body.len() as u64));
     req.set_body(body);
 
@@ -404,9 +408,7 @@ fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
 
     let response: TokenResponse = serde_json::from_slice(&core.run(post).unwrap()).unwrap();
 
-    println!("{} / {}", response.access_token, response.expires_in);
-
-    *state = TeamsToken { token: "mutated".to_string(), expire_date: Utc::now() };
+    *state = TeamsToken { token: response.access_token, expire_date: Utc::now() + Duration::seconds(response.expires_in as i64) };
 }
 
 #[get("/")]
