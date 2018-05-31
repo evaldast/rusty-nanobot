@@ -361,24 +361,24 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     // let client = ::hyper::Client::configure()
     //     .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
     //     .build(&core.handle());
-    //let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
-    //let mut req = Request::new(Method::Post, uri);
+    let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
+    let mut req = Request::new(Method::Post, uri);
 
-    // let teams_response = TeamsResponse {
-    //     response_type: "message".to_string(),
-    //     from: From { id: activity.0.recipient.id, name: activity.0.recipient.name },
-    //     conversation: Conversation { id: activity.0.conversation.id, name: activity.0.conversation.name },
-    //     recipient: Recipient { id: activity.0.from.id, name: activity.0.from.name },
-    //     text: "Hi from Rusty".to_string(),
-    //     replyToId: activity.0.id
-    // };
+    let teams_response = TeamsResponse {
+        response_type: "message".to_string(),
+        from: From { id: activity.0.recipient.id, name: activity.0.recipient.name },
+        conversation: Conversation { id: activity.0.conversation.id, name: activity.0.conversation.name },
+        recipient: Recipient { id: activity.0.from.id, name: activity.0.from.name },
+        text: "Hi from Rusty".to_string(),
+        replyToId: activity.0.id
+    };
 
-    // let json = serde_json::to_string(&teams_response).unwrap();
+    let json = serde_json::to_string(&teams_response).unwrap();
 
-    // req.headers_mut().set(ContentType::json());
-    // req.headers_mut().set(ContentLength(json.len() as u64));
-    // req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
-    // req.set_body(json);
+    req.headers_mut().set(ContentType::json());
+    req.headers_mut().set(ContentLength(json.len() as u64));
+    req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
+    req.set_body(json);
 
     // let post = client.request(req).and_then(|res| {
     //     res.body().concat2()
@@ -392,6 +392,10 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     //     .body("foo=bar")
     //     .send()
     //     .unwrap();
+    let core = Core::new().unwrap();
+    let client = Client::new(&core.handle());
+    client.request(req);
+
     println!("done");
 }
 
