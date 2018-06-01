@@ -1,28 +1,19 @@
 use db;
 use node;
-use rocket::Rocket;
-use rocket::State;
+use node::{Account, Balance};
+use rocket::{Rocket, State};
 use rocket_contrib::Json;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use std::ops::Deref;
-use node::{Account, Balance};
 use serde::ser::{Serialize, Serializer, SerializeStruct};
 use std::any::Any;
 use regex::Regex;
 use futures::{Future, Stream};
-use hyper::{Client, Method, Request, Chunk};
+use hyper::{Client, Method, Request, Uri, header, client};
 use tokio_core::reactor::Core;
 use std::error::Error;
 use serde_json;
-use serde_json::Value;
-use rocket::outcome::{Outcome, IntoOutcome};
-use rocket::data::{self, Data, FromData};
-use rocket::response::{self, Responder, content};
-use rocket::http::Status;
-use rocket;
-use std::io::Cursor;
-use hyper::header::{ContentLength, ContentType, Authorization, Bearer};
 use chrono::{Duration, Utc, DateTime};
 use hyper_tls::HttpsConnector;
 
@@ -205,8 +196,8 @@ struct CoinmarketcapMetadata {
 
 #[derive(Deserialize)]
 struct CoinmarketcapQuotes {
-    USD: CoinmarketcapQuote,
-    EUR: CoinmarketcapQuote
+    usd: CoinmarketcapQuote,
+    eur: CoinmarketcapQuote
 }
 
 #[derive(Deserialize)]
@@ -226,8 +217,12 @@ struct Activity {
 
     id: String,
     timestamp: String,
-    serviceUrl: String,
-    channelId: String,
+
+    #[serde(rename = "serviceUrl")]
+    service_url: String,
+
+    #[serde(rename = "channelId")]
+    channel_id: String,
 
     #[serde(default)]
     from: From,
@@ -277,18 +272,6 @@ struct TeamsResponse {
     replyToId: String
 }
 
-impl<'r> Responder<'r> for TeamsResponse {
-    fn respond_to(self, _: &rocket::Request) -> response::Result<'r> {
-        let mut response = rocket::Response::new();
-
-        response.set_sized_body(Cursor::new(serde_json::to_string(&self).unwrap()));
-        response.set_raw_header("Content-Type", "application/json");
-        response.set_raw_header("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayIsImtpZCI6ImlCakwxUmNxemhpeTRmcHhJeGRacW9oTTJZayJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTUyNzY2MTk5MiwibmJmIjoxNTI3NjYxOTkyLCJleHAiOjE1Mjc2NjU4OTIsImFpbyI6IlkyZGdZREN1MTJtNzRwU3l0R0RqbllCWUsvOWlBQT09IiwiYXBwaWQiOiI4ODc2ODYxNS01YjU4LTRjZDItYTZkOC1hNTFiYmVjMTAxMjYiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiMXdpVy1MOWdXVS1nUDNrUlU0c29BQSIsInZlciI6IjEuMCJ9.YsWLDmlmVKJkjL97DrAoT9dh58vqFMDCELfdZxyUdR-xkZvGB_RB3psvBK9iOD2h-v6q-ACP-O56zam3ogTKl2o78O0w2erF9_eJOehWqx81o3dKYp3WXAm_dJIeBKmXbW_3NXVUmWCMx8lr-FIqluRjPWpU7Q-Wpj6mQaM3GFNp9I0eioANlNhbGRcyt4Qh6ujT5qFQARvYP4U6S4KezCJ3YfTg_rE8xzLhcaIWSxngPpofZKegKQbuCBzUkphROdIiUTkoFLhvAIWqU1et6nceP2zoIYM7R477ISUNeZ566Ltyl0mGmkEG5xVsOluxjF1DQHsTM4rCXPPP9WXb8w");
-
-        Ok(response)
-    }
-}
-
 struct TeamsConfig {
     client_id: String,
     client_secret: String
@@ -319,7 +302,6 @@ struct TokenError {
 
 #[post("/hangouts", format = "application/json", data = "<event>")]
 fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>) -> Json<ResponseMessage> {
-    //println!("{:?}", &event.0);
 
     match event.0.event_type.trim() {
         "ADDED_TO_SPACE" => {
@@ -341,14 +323,10 @@ fn handle_hangouts_message(db_conn: State<Mutex<Connection>>, event: Json<Event>
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activity>, state_teams_token: State<Mutex<TeamsToken>>) {
-    //println!("{:?}", &activity.0);
-
-    println!("Step 1");
+fn handle_teams_message(activity: Json<Activity>, state_teams_token: State<Mutex<TeamsToken>>) {
+    println!("Refreshing token");
 
     refresh_teams_bearer_token(&state_teams_token);
-
-    println!("Refreshing token");
 
     let state = state_teams_token.lock().expect("Could not lock mutex");
     let teams_token = state.deref();
@@ -358,8 +336,8 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     //auajFVRL55[[pylEWN522*!
 
     let mut core = Core::new().unwrap();
-    let client = ::hyper::Client::configure()
-        .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
+    let client = Client::configure()
+        .connector(HttpsConnector::new(4, &core.handle()).unwrap())
         .build(&core.handle());
     let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.0.conversation.id, activity.0.id).parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
@@ -379,9 +357,9 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
 
     println!("creating teams response");
 
-    req.headers_mut().set(ContentType::json());
-    req.headers_mut().set(ContentLength(json.len() as u64));
-    req.headers_mut().set(Authorization(Bearer { token: teams_token.token.to_string() }));
+    req.headers_mut().set(header::ContentType::json());
+    req.headers_mut().set(header::ContentLength(json.len() as u64));
+    req.headers_mut().set(header::Authorization(header::Bearer { token: teams_token.token.to_string() }));
     req.set_body(json);
 
     println!("setting headers");
@@ -397,56 +375,36 @@ fn handle_teams_message(db_conn: State<Mutex<Connection>>, activity: Json<Activi
     println!("done");
 }
 
-fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) {
+fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<(), Box<Error>> {
     let mut state = teams_token.lock().expect("Could not lock mutex");
 
     if state.deref().expire_date >= Utc::now() {
-        return
+        return Ok(())
     }
 
-    let mut core = Core::new().unwrap();
-    let client = Client::configure()
-        .connector(HttpsConnector::new(4, &core.handle()).unwrap())
-        .build(&core.handle());
-    let uri = "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token".parse().unwrap();
+    let mut core = Core::new()?;
+    let client = get_https_client(&core)?;
+    let uri = "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token".parse()?;
     let mut req = Request::new(Method::Post, uri);
-
     let body = "grant_type=client_credentials&client_id=88768615-5b58-4cd2-a6d8-a51bbec10126&client_secret=auajFVRL55[[pylEWN522*!&scope=https%3A%2F%2Fapi.botframework.com%2F.default";
 
-    req.headers_mut().set(ContentLength(body.len() as u64));
+    req.headers_mut().set(header::ContentLength(body.len() as u64));
     req.set_body(body);
 
     let post = client.request(req).and_then(|res| {
         res.body().concat2()
     });
 
-    let response: TokenResponse = serde_json::from_slice(&core.run(post).unwrap()).unwrap();
+    let response: TokenResponse = serde_json::from_slice(&core.run(post)?)?;
 
     *state = TeamsToken { token: response.access_token, expire_date: Utc::now() + Duration::seconds(response.expires_in as i64) };
+
+    Ok(())
 }
 
 #[get("/")]
-fn moo(teams_token: State<Mutex<TeamsToken>>) -> Json<Value> {
-
-    refresh_teams_bearer_token(&teams_token);
-
-    let mut core = Core::new().unwrap();
-    let client = ::hyper::Client::configure()
-        .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
-        .build(&core.handle());
-
-    let uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse().unwrap();
-    let work = client.get(uri).and_then(|res| {
-        res.body().concat2().and_then(move |body| {
-            let v: CoinmarketcapInfo = serde_json::from_slice(&body).unwrap();
-
-            return Ok(v)
-        })
-    });
-
-    let result: CoinmarketcapInfo = core.run(work).unwrap();
-
-    Json(json!(result.data.quotes.EUR.price))
+fn moo() -> Json {
+    Json(json!("howdy, m8"))
 }
 
 fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
@@ -468,7 +426,10 @@ fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> Respons
 
 fn remove_bot_name_from_text(text: &str) -> &str {
     if text.trim().starts_with("@Rusty Nanobot") {
-        text.split("@Rusty Nanobot").nth(1).unwrap()
+        match text.split("@Rusty Nanobot").nth(1) {
+            Some(t) => t,
+            _ => text
+        }
     }
     else {
         text
@@ -609,24 +570,34 @@ fn try_tip(db_conn: &Mutex<Connection>, text_args: &str, sender_email: &str) -> 
 
 fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
     let mut args = text_args.split_whitespace();
-
+    
     let email: &str = match args.nth(1) {
-        Some(a) => {
-            if Regex::new(r"^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+.)?[a-zA-Z]+.)?(visma).com$").unwrap().is_match(a) {
-                a 
-            } 
+        Some(email) => {
+            if 
+                match validate_email_address(email) {
+                    Ok(r) => r,
+                    Err(_) => false 
+                } 
+            {
+                email
+            }        
             else {
-                return Err("Could not parse email address. Must have @visma.com format".to_string())
+                return Err("Could not parse email address".to_string())
             }
         },
         _ => return Err("No email supplied".to_string())
     };
 
     let amount: &str = match args.next() {
-        Some(a) => {
-            if Regex::new(r"^[1-9][0-9]*$").unwrap().is_match(a) {
-                a
-            } 
+        Some(amount) => {
+            if
+                match validate_tip_amont(amount) {
+                    Ok(r) => r,
+                    Err(_) => false
+                }
+            {
+                amount
+            }
             else {
                 return Err("Could not parse amount".to_string())
             }
@@ -635,6 +606,14 @@ fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
     };
 
     Ok((email, amount))
+}
+
+fn validate_email_address(email: &str) -> Result<bool, Box<Error>> {
+    Ok(Regex::new(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$")?.is_match(email))
+}
+
+fn validate_tip_amont(amount: &str) -> Result<bool, Box<Error>> {
+    Ok(Regex::new(r"^[1-9][0-9]*$")?.is_match(amount))
 }
 
 fn convert_raw_to_nano(raw_amount: &str) -> Result<u128, String> {
@@ -651,19 +630,28 @@ fn convert_raw_from_nano(nano_amount: &str) -> Result<u128, String> {
     } 
 }
 
-fn get_nano_price_in_euros() -> Result<Chunk, Box<Error>> {
+fn get_nano_price_in_euros() -> Result<f32, Box<Error>> {
     let mut core = Core::new()?;
-    let client = Client::new(&core.handle());
-    let uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse()?;
-    let req = Request::new(Method::Get, uri);
+    let client = get_https_client(&core)?;
+    let uri: Uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse()?;
 
-    let post = client.request(req).and_then(|res| {
-        res.body().concat2()
+    let work = client.get(uri).and_then(|res| {
+        res.body().concat2().and_then(move |body| {
+            let result: CoinmarketcapInfo = serde_json::from_slice(&body).unwrap();
+
+            return Ok(result)
+        })
     });
 
-    let response = core.run(post).unwrap();
+    Ok(core.run(work)?.data.quotes.eur.price)
+}
 
-    Ok(response)
+fn get_https_client(core: &Core) -> Result<Client<HttpsConnector<client::HttpConnector>>, Box<Error>> {
+    let client = ::hyper::Client::configure()
+        .connector(::hyper_tls::HttpsConnector::new(4, &core.handle())?)
+        .build(&core.handle());
+    
+    Ok(client)
 }
 
 pub fn rocket(db_conn: Mutex<Connection>) -> Rocket {
