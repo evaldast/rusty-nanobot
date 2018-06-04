@@ -1,18 +1,12 @@
 use std::error::Error;
-use hyper::{Client, Method, Request, Uri, header, client};
+use hyper::{Client, Method, Request, header, client};
 use serde_json;
 use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Core;
 use futures::{Future, Stream};
-use std::any::Any;
-use rocket_contrib::Json;
 use std::sync::Mutex;
-use rusqlite::Connection;
-use serde::ser::{Serialize, Serializer, SerializeStruct};
-use node;
-use regex::Regex;
-use db;
 use chrono::{Duration, Utc, DateTime};
+use std::ops::Deref;
 
 #[derive(Deserialize, Debug)]
 pub struct Activity {
@@ -73,17 +67,14 @@ struct TeamsResponse {
     conversation: Conversation,
     recipient: Recipient,
     text: String,
-    replyToId: String
-}
 
-struct TeamsConfig {
-    client_id: String,
-    client_secret: String
+    #[serde(rename = "replyToId")]
+    reply_to_id: String
 }
 
 pub struct TeamsToken {
-    token: String,
-    expire_date: DateTime<Utc>
+    pub value: String,
+    pub expire_date: DateTime<Utc>
 }
 
 #[derive(Deserialize, Debug)]
@@ -104,15 +95,10 @@ struct TokenError {
     correlation_id: String
 }
 
-pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) {
-    println!("Refreshing token");
+pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> Result<String, Box<Error>> {
+    let token: String = get_bearer_token(bearer_token)?;
 
-    refresh_teams_bearer_token(bearer_token);
-
-    let state = bearer_token.lock().expect("Could not lock mutex");
-    let teams_token = state.deref();
-
-    println!("{}", teams_token.token);
+    println!("{}", token);
 
     //auajFVRL55[[pylEWN522*!
 
@@ -140,7 +126,7 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) {
 
     req.headers_mut().set(header::ContentType::json());
     req.headers_mut().set(header::ContentLength(json.len() as u64));
-    req.headers_mut().set(header::Authorization(header::Bearer { token: teams_token.token.to_string() }));
+    req.headers_mut().set(header::Authorization(header::Bearer { token: token }));
     req.set_body(json);
 
     println!("setting headers");
@@ -154,13 +140,15 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) {
     core.run(post);
 
     println!("done");
+
+    Ok("Hi there".to_string())
 }
 
-fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<(), Box<Error>> {
-    let mut state = teams_token.lock().expect("Could not lock mutex");
+fn get_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<String, Box<Error>> {
+    let mut current_token = teams_token.lock().expect("Could not lock mutex");
 
-    if state.deref().expire_date >= Utc::now() {
-        return Ok(())
+    if current_token.expire_date >= Utc::now() {
+        return Ok(current_token.value.clone())
     }
 
     let mut core = Core::new()?;
@@ -178,9 +166,9 @@ fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<(), Box
 
     let response: TokenResponse = serde_json::from_slice(&core.run(post)?)?;
 
-    *state = TeamsToken { token: response.access_token, expire_date: Utc::now() + Duration::seconds(response.expires_in as i64) };
+    *current_token = TeamsToken { value: response.access_token.clone(), expire_date: Utc::now() + Duration::seconds(response.expires_in as i64) };
 
-    Ok(())
+    Ok(response.access_token)
 }
 
 fn get_https_client(core: &Core) -> Result<Client<HttpsConnector<client::HttpConnector>>, Box<Error>> {

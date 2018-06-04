@@ -1,11 +1,5 @@
 use std::error::Error;
-use hyper::{Client, Method, Request, Uri, header, client};
-use serde_json;
-use hyper_tls::HttpsConnector;
-use tokio_core::reactor::Core;
-use futures::{Future, Stream};
 use std::any::Any;
-use rocket_contrib::Json;
 use std::sync::Mutex;
 use rusqlite::Connection;
 use serde::ser::{Serialize, Serializer, SerializeStruct};

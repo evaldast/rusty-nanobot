@@ -1,11 +1,8 @@
 use std::error::Error;
-use hyper::{Client, Method, Request, Uri, header, client};
+use hyper::{Uri};
 use serde_json;
-use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Core;
 use futures::{Future, Stream};
-use serde::ser::{Serialize, Serializer, SerializeStruct};
-use std::ops::Deref;
 
 #[derive(Deserialize)]
 struct CoinmarketcapInfo {
