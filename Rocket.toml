@@ -1,5 +1,5 @@
 [development]
-address = "192.168.1.140"
+address = "127.0.0.1"
 port = 8000
 # workers = [number of cpus * 2]
 log = "normal"
