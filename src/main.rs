@@ -1,7 +1,5 @@
 #![feature(plugin, decl_macro)]
 #![plugin(rocket_codegen)]
-#![allow(unknown_lints)]
-#![warn(clippy)]
 
 #[macro_use]
 extern crate serde_derive;
@@ -23,5 +21,5 @@ mod db;
 mod node;
 
 fn main() {
-    api::rocket(db::get_connection()).launch();
+    api::controller::rocket(db::get_connection()).launch();
 }

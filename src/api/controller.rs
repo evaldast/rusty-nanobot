@@ -16,6 +16,7 @@ use std::error::Error;
 use serde_json;
 use chrono::{Duration, Utc, DateTime};
 use hyper_tls::HttpsConnector;
+use api::coinmarketcap::{get_nano_price_in_euros};
 
 #[derive(Deserialize, Debug)]
 struct Event {
@@ -166,48 +167,6 @@ impl Widget for KeyValueWidget {
     fn as_any(&self) -> &Any {
         self
     }
-}
-
-#[derive(Deserialize)]
-struct CoinmarketcapInfo {
-    data: CoinmarketcapData,
-    metadata: CoinmarketcapMetadata
-}
-
-#[derive(Deserialize)]
-struct CoinmarketcapData {
-    id: u16,
-    name: String,
-    symbol: String,
-    website_slug: String,
-    rank: u16,
-    circulating_supply: f64,
-    total_supply: f64,
-    max_supply: f64,
-    quotes: CoinmarketcapQuotes,
-    last_updated: u64
-}
-
-#[derive(Deserialize)]
-struct CoinmarketcapMetadata {
-    timestamp: u64,
-    error: Option<String>
-}
-
-#[derive(Deserialize)]
-struct CoinmarketcapQuotes {
-    usd: CoinmarketcapQuote,
-    eur: CoinmarketcapQuote
-}
-
-#[derive(Deserialize)]
-struct CoinmarketcapQuote {
-    price: f32,
-    volume_24h: f64,
-    market_cap: f64,
-    percent_change_1h: f32,
-    percent_change_24h: f32,
-    percent_change_7d: f32
 }
 
 #[derive(Deserialize, Debug)]
@@ -404,7 +363,10 @@ fn refresh_teams_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<(), Box
 
 #[get("/")]
 fn moo() -> Json {
-    Json(json!("howdy, m8"))
+    match get_nano_price_in_euros() {
+        Ok(r) => Json(json!(r)),
+        Err(_) => Json(json!("Oooops"))
+    }
 }
 
 fn parse_text(text: &str, user: &Sender, db_conn: &Mutex<Connection>) -> ResponseMessage {
@@ -628,22 +590,6 @@ fn convert_raw_from_nano(nano_amount: &str) -> Result<u128, String> {
         Ok(a) => Ok(a * 1_000_000_000_000_000_000_000_000),
         Err(_) => Err("Error converting nano to raw".to_string())
     } 
-}
-
-fn get_nano_price_in_euros() -> Result<f32, Box<Error>> {
-    let mut core = Core::new()?;
-    let client = get_https_client(&core)?;
-    let uri: Uri = "https://api.coinmarketcap.com/v2/ticker/1567/?convert=EUR".parse()?;
-
-    let work = client.get(uri).and_then(|res| {
-        res.body().concat2().and_then(move |body| {
-            let result: CoinmarketcapInfo = serde_json::from_slice(&body).unwrap();
-
-            return Ok(result)
-        })
-    });
-
-    Ok(core.run(work)?.data.quotes.eur.price)
 }
 
 fn get_https_client(core: &Core) -> Result<Client<HttpsConnector<client::HttpConnector>>, Box<Error>> {
