@@ -6,7 +6,6 @@ use tokio_core::reactor::Core;
 use futures::{Future, Stream};
 use std::sync::Mutex;
 use chrono::{Duration, Utc, DateTime};
-use std::ops::Deref;
 
 #[derive(Deserialize, Debug)]
 pub struct Activity {
@@ -117,7 +116,7 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
         conversation: Conversation { id: activity.conversation.id, name: activity.conversation.name },
         recipient: Recipient { id: activity.from.id, name: activity.from.name },
         text: "Hi from Rusty".to_string(),
-        replyToId: activity.id
+        reply_to_id: activity.id
     };
 
     let json = serde_json::to_string(&teams_response).unwrap();
