@@ -159,6 +159,7 @@ struct ColumnSet {
     body_type: String,
 
     separator: bool,
+    spacing: Option<String>,
     columns: Vec<Column>
 }
 
@@ -177,8 +178,8 @@ struct ImageBlock {
     body_type: String,
 
     url: String,
-    size: String,
-    spacing: String
+    size: Option<String>,
+    spacing: Option<String>
 }
 
 trait CardBody: erased_serde::Serialize {}
@@ -303,21 +304,32 @@ fn get_test_adaptive_card() -> AttachmentAdaptive {
             card_type: "AdaptiveCard".to_string(),
             version: "1.0".to_string(),
             body: vec!(
-                 Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{action} {crypto}".to_string(), weight: Some("bolder".to_string()), color: None, size: None, spacing: None, horizontal_alignment: None }),
-                 Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, columns: vec!(
-                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Sender".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
-                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{sender_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: None })
-                     )},
-                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "&nbsp".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
-                         Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://i.imgur.com/6J8tqcM.png".to_string(), size: "small".to_string(), spacing: "none".to_string() })
-                     )},
-                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Receiver".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: Some("right".to_string()) }),
-                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{receiver_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: Some("right".to_string()) })
-                     )}                    
-                 ) })
+                Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{action} {crypto}".to_string(), weight: Some("bolder".to_string()), color: None, size: None, spacing: None, horizontal_alignment: None }),
+                Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
+                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Sender".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{sender_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: None })
+                    )},
+                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "&nbsp".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
+                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://i.imgur.com/6J8tqcM.png".to_string(), size: Some("small".to_string()), spacing: Some("none".to_string()) })
+                    )},
+                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Receiver".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: Some("right".to_string()) }),
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{receiver_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: Some("right".to_string()) })
+                    )}                    
+                ) }),
+                Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
+                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
+                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "http://adaptivecards.io/content/cats/1.png".to_string(), size: None, spacing: None })
+                    )}
+                ) }),
+                Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: Some("medium".to_string()), columns: vec!(
+                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Total".to_string(), weight: None, color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: None }),
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{amount}".to_string(), weight: Some("bolder".to_string()), color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: Some("right".to_string()) })
+                    )}
+                ) })
             )
         }
     }
