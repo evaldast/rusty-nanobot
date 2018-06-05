@@ -320,13 +320,15 @@ fn get_test_adaptive_card() -> AttachmentAdaptive {
                     )}                    
                 ) }),
                 Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
-                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
+                    Column { body_type: "Column".to_string(), width: "auto".to_string(), items: vec!(
                         Box::new(ImageBlock { body_type: "Image".to_string(), url: "http://adaptivecards.io/content/cats/1.png".to_string(), size: None, spacing: None })
                     )}
                 ) }),
                 Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: Some("medium".to_string()), columns: vec!(
                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Total".to_string(), weight: None, color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: None }),
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Total".to_string(), weight: None, color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: None })
+                    )},
+                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(                        
                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{amount}".to_string(), weight: Some("bolder".to_string()), color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: Some("right".to_string()) })
                     )}
                 ) })
