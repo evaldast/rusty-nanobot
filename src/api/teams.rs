@@ -223,7 +223,7 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
     let client = Client::configure()
         .connector(HttpsConnector::new(4, &core.handle()).unwrap())
         .build(&core.handle());
-    let uri = format!("https://webchat.botframework.com/v3/conversations/{}/activities/{}", activity.conversation.id, activity.id).parse().unwrap();
+    let uri = format!("https://smba.trafficmanager.net/apis/v3/conversations/{}/activities/{}", activity.conversation.id, activity.id).parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
 
     println!("creating core and request");
