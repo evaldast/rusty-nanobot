@@ -179,7 +179,10 @@ struct ImageBlock {
 
     url: String,
     size: Option<String>,
-    spacing: Option<String>
+    spacing: Option<String>,
+
+    #[serde(rename = "horizontalAlignment")]
+    horizontal_alignment: Option<String>
 }
 
 trait CardBody: erased_serde::Serialize {}
@@ -315,7 +318,7 @@ fn get_test_adaptive_card() -> AttachmentAdaptive {
                     )},
                     Column { body_type: "Column".to_string(), width: "auto".to_string(), items: vec!(
                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
-                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://i.imgur.com/6J8tqcM.png".to_string(), size: Some("small".to_string()), spacing: Some("none".to_string()) })
+                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://i.imgur.com/6J8tqcM.png".to_string(), size: Some("small".to_string()), spacing: Some("none".to_string()), horizontal_alignment: None })
                     )},
                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Receiver".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: Some("right".to_string()) }),
@@ -324,7 +327,7 @@ fn get_test_adaptive_card() -> AttachmentAdaptive {
                 ) }),
                 Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
                     Column { body_type: "Column".to_string(), width: "auto".to_string(), items: vec!(
-                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={}".to_string(), size: None, spacing: None })
+                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={}".to_string(), size: None, spacing: None, horizontal_alignment: Some("center".to_string()) })
                     )}
                 ) }),
                 Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: Some("medium".to_string()), columns: vec!(
