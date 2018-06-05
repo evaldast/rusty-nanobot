@@ -14,6 +14,8 @@ fn hangouts(db_conn: State<Mutex<Connection>>, event: Json<hangouts::Event>) -> 
 
 #[post("/teams", format = "application/json", data = "<activity>")]
 fn teams(activity: Json<teams::Activity>, bearer_token: State<Mutex<teams::TeamsToken>>) -> Json {
+    println!("{:?}", activity.0);
+
     match teams::handle_message(activity.0, &bearer_token) {
         Ok(r) => Json(json!(r)),
         Err(_) => Json(json!("woops"))
