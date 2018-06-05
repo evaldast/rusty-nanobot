@@ -150,7 +150,7 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
         recipient: Recipient { id: activity.from.id, name: activity.from.name },
         attachments: vec!(Attachment {
              content_type: "application/vnd.microsoft.card.hero".to_string(),
-             content: AttachmentContent { title: "Test".to_string(), subtitle: "Test".to_string(), text: "Test".to_string(), images: vec!(AttachmentImage {url: "http://aka.ms/Fo983c".to_string(), alt: "Test".to_string()}), buttons: vec!(AttachmentButton { button_type: "playAudio".to_string(), alt: "Test".to_string(), value: "Test".to_string()}) } 
+             content: AttachmentContent { title: "Test".to_string(), subtitle: "Test".to_string(), text: "Test".to_string(), images: vec!(AttachmentImage {url: "http://aka.ms/Fo983c".to_string(), alt: "Test".to_string()}), buttons: vec!(AttachmentButton { button_type: "playAudio".to_string(), title: "Test".to_string(), value: "Test".to_string()}) } 
              }),
         text: None,
         reply_to_id: activity.id
