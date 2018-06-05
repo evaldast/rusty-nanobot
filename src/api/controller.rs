@@ -17,7 +17,7 @@ fn teams(activity: Json<teams::Activity>, bearer_token: State<Mutex<teams::Teams
     println!("{:?}", activity.0);
 
     match teams::handle_message(activity.0, &bearer_token) {
-        Ok(r) => Json(json!(r)),
+        Ok(_) => Json(json!(())),
         Err(_) => Json(json!("woops"))
     }
 }

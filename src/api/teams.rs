@@ -240,20 +240,16 @@ struct TokenError {
     correlation_id: String
 }
 
-pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> Result<String, Box<Error>> {
+pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> Result<(), Box<Error>> {
     let token: String = get_bearer_token(bearer_token)?;
-
-    println!("{}", token);
 
     //auajFVRL55[[pylEWN522*!
 
-    let mut core = Core::new().unwrap();
+    let mut core = Core::new()?;
     let client = Client::configure()
-        .connector(HttpsConnector::new(4, &core.handle()).unwrap())
+        .connector(HttpsConnector::new(4, &core.handle())?)
         .build(&core.handle());
-    let uri = format!("{}v3/conversations/{}/activities/{}", activity.service_url, activity.conversation.id, activity.id).parse().unwrap();
-
-    println!("{}", uri);
+    let uri = format!("{}v3/conversations/{}/activities/{}", activity.service_url, activity.conversation.id, activity.id).parse()?;
 
     let mut req = Request::new(Method::Post, uri);
 
@@ -269,7 +265,7 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
         reply_to_id: activity.id
     };
 
-    let json = serde_json::to_string(&teams_response).unwrap();
+    let json = serde_json::to_string(&teams_response)?;
 
     println!("creating teams response");
 
@@ -286,11 +282,11 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
 
     println!("creating post");
 
-    core.run(post);
+    core.run(post)?;
 
     println!("done");
 
-    Ok("Hi there".to_string())
+    Ok(())
 }
 
 fn get_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<String, Box<Error>> {
