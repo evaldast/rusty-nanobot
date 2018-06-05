@@ -13,7 +13,9 @@ pub struct Activity {
     #[serde(rename = "type")]
     activity_type: String,
 
+    #[serde(default)]
     text: String,
+    
     id: String,
     timestamp: String,
 
@@ -70,7 +72,10 @@ struct Mention {
 
 #[derive(Deserialize, Debug)]
 struct UserMention {
+    #[serde(default)]
     id: String,
+
+    #[serde(default)]
     name: String
 }
 
