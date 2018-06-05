@@ -6,6 +6,7 @@ use tokio_core::reactor::Core;
 use futures::{Future, Stream};
 use std::sync::Mutex;
 use chrono::{Duration, Utc, DateTime};
+use erased_serde;
 
 #[derive(Deserialize, Debug)]
 pub struct Activity {
@@ -73,6 +74,21 @@ struct TeamsResponse {
 }
 
 #[derive(Serialize)]
+struct TeamsResponseAdaptive {
+    #[serde(rename = "type")]
+    response_type: String,
+
+    from: From,
+    conversation: Conversation,
+    recipient: Recipient,
+    text: Option<String>,
+    attachments: Vec<AttachmentAdaptive>,
+
+    #[serde(rename = "replyToId")]
+    reply_to_id: String
+}
+
+#[derive(Serialize)]
 struct Attachment {
     #[serde(rename = "contentType")]
     content_type: String,
@@ -103,6 +119,70 @@ struct AttachmentButton {
     title: String,
     value: String
 }
+
+#[derive(Serialize)]
+struct AttachmentAdaptive {
+    #[serde(rename = "contentType")]
+    content_type: String,
+
+    content: AdaptiveCard
+}
+
+#[derive(Serialize)]
+struct AdaptiveCard {
+    version: String,
+
+    #[serde(rename = "type")]
+    card_type: String,
+    
+    body: Vec<Box<CardBody>>
+}
+
+#[derive(Serialize)]
+struct TextBlock {
+    #[serde(rename = "type")]
+    body_type: String,
+
+    text: String,
+    weight: Option<String>,
+    color: Option<String>,
+    size: Option<String>,
+    spacing: Option<String>
+}
+
+#[derive(Serialize)]
+struct ColumnSet {
+    #[serde(rename = "type")]
+    body_type: String,
+
+    separator: bool,
+    columns: Vec<Column>
+}
+
+#[derive(Serialize)]
+struct Column {
+    #[serde(rename = "type")]
+    body_type: String,
+
+    width: String,
+    items: Vec<Box<CardBody>>
+}
+
+#[derive(Serialize)]
+struct ImageBlock {
+    #[serde(rename = "type")]
+    body_type: String,
+
+    url: String,
+    size: String,
+    spacing: String
+}
+
+trait CardBody: erased_serde::Serialize {}
+impl CardBody for TextBlock {}
+impl CardBody for ColumnSet {}
+
+serialize_trait_object!(CardBody);
 
 pub struct TeamsToken {
     pub value: String,
@@ -143,15 +223,12 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
 
     println!("creating core and request");
 
-    let teams_response = TeamsResponse {
+    let teams_response = TeamsResponseAdaptive {
         response_type: "message".to_string(),
         from: From { id: activity.recipient.id, name: activity.recipient.name },
         conversation: Conversation { id: activity.conversation.id, name: activity.conversation.name },
         recipient: Recipient { id: activity.from.id, name: activity.from.name },
-        attachments: vec!(Attachment {
-             content_type: "application/vnd.microsoft.card.hero".to_string(),
-             content: AttachmentContent { title: "Test".to_string(), subtitle: "Test".to_string(), text: "Test".to_string(), images: vec!(AttachmentImage {url: "http://aka.ms/Fo983c".to_string(), alt: "Test".to_string()}), buttons: vec!(AttachmentButton { button_type: "playAudio".to_string(), title: "Test".to_string(), value: "Test".to_string()}) } 
-             }),
+        attachments: vec!(get_test_adaptive_card()),
         text: None,
         reply_to_id: activity.id
     };
@@ -213,4 +290,17 @@ fn get_https_client(core: &Core) -> Result<Client<HttpsConnector<client::HttpCon
         .build(&core.handle());
     
     Ok(client)
+}
+
+fn get_test_adaptive_card() -> AttachmentAdaptive {
+    AttachmentAdaptive {
+        content_type: "application/vnd.microsoft.card.adaptive".to_string(),
+        content: AdaptiveCard {
+            card_type: "AdaptiveCard".to_string(),
+            version: "1.0".to_string(),
+            body: vec!(
+                 Box::new( TextBlock { body_type: "TextBlock".to_string(), text: "{action} {crypto}".to_string(), weight: Some("bolder".to_string()), color: None, size: None, spacing: None })
+            )
+        }
+    }
 }
