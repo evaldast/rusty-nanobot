@@ -15,7 +15,7 @@ pub struct Activity {
 
     #[serde(default)]
     text: String,
-    
+
     id: String,
     timestamp: String,
 
@@ -35,7 +35,7 @@ pub struct Activity {
     recipient: Recipient,
 
     #[serde(default)]
-    entities: Vec<UserMention>
+    entities: Vec<Mention>
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -67,7 +67,8 @@ struct Mention {
     #[serde(rename = "type")]
     activity_type: String,
 
-    mentioned: UserMention
+    mentioned: UserMention,
+    text: String
 }
 
 #[derive(Deserialize, Debug)]
