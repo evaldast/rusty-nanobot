@@ -67,11 +67,13 @@ struct Mention {
     #[serde(rename = "type")]
     activity_type: String,
 
+    #[serde(default)]
     mentioned: UserMention,
+
     text: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 struct UserMention {
     #[serde(default)]
     id: String,
