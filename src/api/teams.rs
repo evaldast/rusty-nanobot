@@ -70,6 +70,7 @@ struct Mention {
     #[serde(default)]
     mentioned: UserMention,
 
+    #[serde(default)]
     text: String
 }
 
