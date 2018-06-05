@@ -65,10 +65,43 @@ struct TeamsResponse {
     from: From,
     conversation: Conversation,
     recipient: Recipient,
-    text: String,
+    text: Option<String>,
+    attachments: Vec<Attachment>,
 
     #[serde(rename = "replyToId")]
     reply_to_id: String
+}
+
+#[derive(Serialize)]
+struct Attachment {
+    #[serde(rename = "contentType")]
+    content_type: String,
+
+    content: AttachmentContent
+}
+
+#[derive(Serialize)]
+struct AttachmentContent {
+    title: String,
+    subtitle: String,
+    text: String,
+    images: Vec<AttachmentImage>,
+    buttons: Vec<AttachmentButton>
+}
+
+#[derive(Serialize)] 
+struct AttachmentImage {
+    url: String,
+    alt: String
+}
+
+#[derive(Serialize)]
+struct AttachmentButton {
+    #[serde(rename = "type")]
+    button_type: String,
+
+    title: String,
+    value: String
 }
 
 pub struct TeamsToken {
@@ -115,7 +148,11 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
         from: From { id: activity.recipient.id, name: activity.recipient.name },
         conversation: Conversation { id: activity.conversation.id, name: activity.conversation.name },
         recipient: Recipient { id: activity.from.id, name: activity.from.name },
-        text: "Hi from Rusty".to_string(),
+        attachments: vec!(Attachment {
+             content_type: "application/vnd.microsoft.card.hero".to_string(),
+             content: AttachmentContent { title: "Test".to_string(), subtitle: "Test".to_string(), text: "Test".to_string(), images: vec!(AttachmentImage {url: "http://aka.ms/Fo983c".to_string(), alt: "Test".to_string()}), buttons: vec!(AttachmentButton { button_type: "playAudio".to_string(), alt: "Test".to_string(), value: "Test".to_string()}) } 
+             }),
+        text: None,
         reply_to_id: activity.id
     };
 
