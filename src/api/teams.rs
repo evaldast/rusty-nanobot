@@ -313,8 +313,8 @@ fn get_test_adaptive_card() -> AttachmentAdaptive {
                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Sender".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{sender_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: None })
                     )},
-                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
+                    Column { body_type: "Column".to_string(), width: "auto".to_string(), items: vec!(
+                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "&nbsp".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
                         Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://i.imgur.com/6J8tqcM.png".to_string(), size: Some("small".to_string()), spacing: Some("none".to_string()) })
                     )},
                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
