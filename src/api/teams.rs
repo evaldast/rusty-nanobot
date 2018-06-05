@@ -13,6 +13,7 @@ pub struct Activity {
     #[serde(rename = "type")]
     activity_type: String,
 
+    text: String,
     id: String,
     timestamp: String,
 
@@ -31,7 +32,8 @@ pub struct Activity {
     #[serde(default)]
     recipient: Recipient,
 
-    text: String
+    #[serde(default)]
+    entities: Vec<UserMention>
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -55,6 +57,20 @@ struct Recipient {
     id: String,
 
     #[serde(default)]
+    name: String
+}
+
+#[derive(Deserialize, Debug)]
+struct Mention {
+    #[serde(rename = "type")]
+    activity_type: String,
+
+    mentioned: UserMention
+}
+
+#[derive(Deserialize, Debug)]
+struct UserMention {
+    id: String,
     name: String
 }
 
@@ -239,7 +255,7 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
         from: From { id: activity.recipient.id, name: activity.recipient.name },
         conversation: Conversation { id: activity.conversation.id, name: activity.conversation.name },
         recipient: Recipient { id: activity.from.id, name: activity.from.name },
-        attachments: vec!(get_test_adaptive_card()),
+        attachments: vec!(get_deposit_card()),
         text: None,
         reply_to_id: activity.id
     };
@@ -303,14 +319,14 @@ fn get_https_client(core: &Core) -> Result<Client<HttpsConnector<client::HttpCon
     Ok(client)
 }
 
-fn get_test_adaptive_card() -> AttachmentAdaptive {
+fn get_deposit_card() -> AttachmentAdaptive {
     AttachmentAdaptive {
         content_type: "application/vnd.microsoft.card.adaptive".to_string(),
         content: AdaptiveCard {
             card_type: "AdaptiveCard".to_string(),
             version: "1.0".to_string(),
             body: vec!(
-                Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{action} {crypto}".to_string(), weight: Some("bolder".to_string()), color: None, size: None, spacing: None, horizontal_alignment: None }),
+                Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Deposit NANO".to_string(), weight: Some("bolder".to_string()), color: None, size: None, spacing: None, horizontal_alignment: None }),
                 Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
                     Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
                         Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Sender".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
