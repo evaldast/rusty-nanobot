@@ -7,33 +7,33 @@ use futures::{Future, Stream};
 #[derive(Deserialize)]
 struct CoinmarketcapInfo {
     data: CoinmarketcapData,
-    metadata: CoinmarketcapMetadata
+    //metadata: CoinmarketcapMetadata
 }
 
 #[derive(Deserialize)]
 struct CoinmarketcapData {
-    id: u16,
-    name: String,
-    symbol: String,
-    website_slug: String,
-    rank: u16,
-    circulating_supply: f64,
-    total_supply: f64,
-    max_supply: f64,
+    //id: u16,
+    //name: String,
+    //symbol: String,
+    //website_slug: String,
+    //rank: u16,
+    //circulating_supply: f64,
+    //total_supply: f64,
+    //max_supply: f64,
     quotes: CoinmarketcapQuotes,
-    last_updated: u64
+    //last_updated: u64
 }
 
-#[derive(Deserialize)]
-struct CoinmarketcapMetadata {
-    timestamp: u64,
-    error: Option<String>
-}
+// #[derive(Deserialize)]
+// struct CoinmarketcapMetadata {
+//     timestamp: u64,
+//     error: Option<String>
+// }
 
 #[derive(Deserialize)]
 struct CoinmarketcapQuotes {
-    #[serde(rename = "USD")]
-    usd: CoinmarketcapQuote,
+    // #[serde(rename = "USD")]
+    // usd: CoinmarketcapQuote,
 
     #[serde(rename = "EUR")]
     eur: CoinmarketcapQuote
@@ -42,11 +42,11 @@ struct CoinmarketcapQuotes {
 #[derive(Deserialize)]
 struct CoinmarketcapQuote {
     price: f32,
-    volume_24h: f64,
-    market_cap: f64,
-    percent_change_1h: f32,
-    percent_change_24h: f32,
-    percent_change_7d: f32
+    // volume_24h: f64,
+    // market_cap: f64,
+    // percent_change_1h: f32,
+    // percent_change_24h: f32,
+    // percent_change_7d: f32
 }
 
 pub fn get_nano_price_in_euros() -> Result<f32, Box<Error>> {

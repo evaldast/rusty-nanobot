@@ -83,20 +83,20 @@ struct UserMention {
     name: String
 }
 
-#[derive(Serialize)]
-struct TeamsResponse {
-    #[serde(rename = "type")]
-    response_type: String,
+// #[derive(Serialize)]
+// struct TeamsResponse {
+//     #[serde(rename = "type")]
+//     response_type: String,
 
-    from: From,
-    conversation: Conversation,
-    recipient: Recipient,
-    text: Option<String>,
-    attachments: Vec<Attachment>,
+//     from: From,
+//     conversation: Conversation,
+//     recipient: Recipient,
+//     text: Option<String>,
+//     attachments: Vec<Attachment>,
 
-    #[serde(rename = "replyToId")]
-    reply_to_id: String
-}
+//     #[serde(rename = "replyToId")]
+//     reply_to_id: String
+// }
 
 #[derive(Serialize)]
 struct TeamsResponseAdaptive {
@@ -113,37 +113,37 @@ struct TeamsResponseAdaptive {
     reply_to_id: String
 }
 
-#[derive(Serialize)]
-struct Attachment {
-    #[serde(rename = "contentType")]
-    content_type: String,
+// #[derive(Serialize)]
+// struct Attachment {
+//     #[serde(rename = "contentType")]
+//     content_type: String,
 
-    content: AttachmentContent
-}
+//     content: AttachmentContent
+// }
 
-#[derive(Serialize)]
-struct AttachmentContent {
-    title: String,
-    subtitle: String,
-    text: String,
-    images: Vec<AttachmentImage>,
-    buttons: Vec<AttachmentButton>
-}
+// #[derive(Serialize)]
+// struct AttachmentContent {
+//     title: String,
+//     subtitle: String,
+//     text: String,
+//     images: Vec<AttachmentImage>,
+//     buttons: Vec<AttachmentButton>
+// }
 
-#[derive(Serialize)] 
-struct AttachmentImage {
-    url: String,
-    alt: String
-}
+// #[derive(Serialize)] 
+// struct AttachmentImage {
+//     url: String,
+//     alt: String
+// }
 
-#[derive(Serialize)]
-struct AttachmentButton {
-    #[serde(rename = "type")]
-    button_type: String,
+// #[derive(Serialize)]
+// struct AttachmentButton {
+//     #[serde(rename = "type")]
+//     button_type: String,
 
-    title: String,
-    value: String
-}
+//     title: String,
+//     value: String
+// }
 
 #[derive(Serialize)]
 struct AttachmentAdaptive {
