@@ -1,8 +1,8 @@
-use std::error::Error;
-use hyper::{Uri};
-use serde_json;
-use tokio_core::reactor::Core;
 use futures::{Future, Stream};
+use hyper::Uri;
+use serde_json;
+use std::error::Error;
+use tokio_core::reactor::Core;
 
 #[derive(Deserialize)]
 struct CoinmarketcapInfo {
@@ -34,9 +34,8 @@ struct CoinmarketcapData {
 struct CoinmarketcapQuotes {
     // #[serde(rename = "USD")]
     // usd: CoinmarketcapQuote,
-
     #[serde(rename = "EUR")]
-    eur: CoinmarketcapQuote
+    eur: CoinmarketcapQuote,
 }
 
 #[derive(Deserialize)]
@@ -60,7 +59,7 @@ pub fn get_nano_price_in_euros() -> Result<f32, Box<Error>> {
         res.body().concat2().and_then(move |body| {
             let result: CoinmarketcapInfo = serde_json::from_slice(&body).unwrap();
 
-            return Ok(result)
+            return Ok(result);
         })
     });
 

@@ -1,12 +1,12 @@
-use std::error::Error;
-use hyper::{Client, Method, Request, header, client};
-use serde_json;
-use hyper_tls::HttpsConnector;
-use tokio_core::reactor::Core;
-use futures::{Future, Stream};
-use std::sync::Mutex;
-use chrono::{Duration, Utc, DateTime};
+use chrono::{DateTime, Duration, Utc};
 use erased_serde;
+use futures::{Future, Stream};
+use hyper::{client, header, Client, Method, Request};
+use hyper_tls::HttpsConnector;
+use serde_json;
+use std::error::Error;
+use std::sync::Mutex;
+use tokio_core::reactor::Core;
 
 #[derive(Deserialize, Debug)]
 pub struct Activity {
@@ -35,7 +35,7 @@ pub struct Activity {
     recipient: Recipient,
 
     #[serde(default)]
-    entities: Vec<Mention>
+    entities: Vec<Mention>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -43,7 +43,7 @@ struct From {
     id: String,
 
     #[serde(default)]
-    name: String
+    name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -51,7 +51,7 @@ struct Conversation {
     id: String,
 
     #[serde(default)]
-    name: String
+    name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -59,7 +59,7 @@ struct Recipient {
     id: String,
 
     #[serde(default)]
-    name: String
+    name: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -71,7 +71,7 @@ struct Mention {
     mentioned: UserMention,
 
     #[serde(default)]
-    text: String
+    text: String,
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -80,7 +80,7 @@ struct UserMention {
     id: String,
 
     #[serde(default)]
-    name: String
+    name: String,
 }
 
 // #[derive(Serialize)]
@@ -110,7 +110,7 @@ struct TeamsResponseAdaptive {
     attachments: Vec<AttachmentAdaptive>,
 
     #[serde(rename = "replyToId")]
-    reply_to_id: String
+    reply_to_id: String,
 }
 
 // #[derive(Serialize)]
@@ -130,7 +130,7 @@ struct TeamsResponseAdaptive {
 //     buttons: Vec<AttachmentButton>
 // }
 
-// #[derive(Serialize)] 
+// #[derive(Serialize)]
 // struct AttachmentImage {
 //     url: String,
 //     alt: String
@@ -150,7 +150,7 @@ struct AttachmentAdaptive {
     #[serde(rename = "contentType")]
     content_type: String,
 
-    content: AdaptiveCard
+    content: AdaptiveCard,
 }
 
 #[derive(Serialize)]
@@ -159,8 +159,8 @@ struct AdaptiveCard {
 
     #[serde(rename = "type")]
     card_type: String,
-    
-    body: Vec<Box<CardBody>>
+
+    body: Vec<Box<CardBody>>,
 }
 
 #[derive(Serialize)]
@@ -175,7 +175,7 @@ struct TextBlock {
     spacing: Option<String>,
 
     #[serde(rename = "horizontalAlignment")]
-    horizontal_alignment: Option<String>
+    horizontal_alignment: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -185,7 +185,7 @@ struct ColumnSet {
 
     separator: bool,
     spacing: Option<String>,
-    columns: Vec<Column>
+    columns: Vec<Column>,
 }
 
 #[derive(Serialize)]
@@ -194,7 +194,7 @@ struct Column {
     body_type: String,
 
     width: String,
-    items: Vec<Box<CardBody>>
+    items: Vec<Box<CardBody>>,
 }
 
 #[derive(Serialize)]
@@ -207,7 +207,7 @@ struct ImageBlock {
     spacing: Option<String>,
 
     #[serde(rename = "horizontalAlignment")]
-    horizontal_alignment: Option<String>
+    horizontal_alignment: Option<String>,
 }
 
 trait CardBody: erased_serde::Serialize {}
@@ -219,7 +219,7 @@ serialize_trait_object!(CardBody);
 
 pub struct TeamsToken {
     pub value: String,
-    pub expire_date: DateTime<Utc>
+    pub expire_date: DateTime<Utc>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -237,10 +237,13 @@ struct TokenError {
     error_codes: Vec<u16>,
     timestamp: String,
     trace_id: String,
-    correlation_id: String
+    correlation_id: String,
 }
 
-pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> Result<(), Box<Error>> {
+pub fn handle_message(
+    activity: Activity,
+    bearer_token: &Mutex<TeamsToken>,
+) -> Result<(), Box<Error>> {
     let token: String = get_bearer_token(bearer_token)?;
 
     //auajFVRL55[[pylEWN522*!
@@ -249,7 +252,10 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
     let client = Client::configure()
         .connector(HttpsConnector::new(4, &core.handle())?)
         .build(&core.handle());
-    let uri = format!("{}v3/conversations/{}/activities/{}", activity.service_url, activity.conversation.id, activity.id).parse()?;
+    let uri = format!(
+        "{}v3/conversations/{}/activities/{}",
+        activity.service_url, activity.conversation.id, activity.id
+    ).parse()?;
 
     let mut req = Request::new(Method::Post, uri);
 
@@ -257,12 +263,21 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
 
     let teams_response = TeamsResponseAdaptive {
         response_type: "message".to_string(),
-        from: From { id: activity.recipient.id, name: activity.recipient.name },
-        conversation: Conversation { id: activity.conversation.id, name: activity.conversation.name },
-        recipient: Recipient { id: activity.from.id, name: activity.from.name },
-        attachments: vec!(get_deposit_card()),
+        from: From {
+            id: activity.recipient.id,
+            name: activity.recipient.name,
+        },
+        conversation: Conversation {
+            id: activity.conversation.id,
+            name: activity.conversation.name,
+        },
+        recipient: Recipient {
+            id: activity.from.id,
+            name: activity.from.name,
+        },
+        attachments: vec![get_deposit_card()],
         text: None,
-        reply_to_id: activity.id
+        reply_to_id: activity.id,
     };
 
     let json = serde_json::to_string(&teams_response)?;
@@ -270,15 +285,15 @@ pub fn handle_message(activity: Activity, bearer_token: &Mutex<TeamsToken>) -> R
     println!("creating teams response");
 
     req.headers_mut().set(header::ContentType::json());
-    req.headers_mut().set(header::ContentLength(json.len() as u64));
-    req.headers_mut().set(header::Authorization(header::Bearer { token: token }));
+    req.headers_mut()
+        .set(header::ContentLength(json.len() as u64));
+    req.headers_mut()
+        .set(header::Authorization(header::Bearer { token: token }));
     req.set_body(json);
 
     println!("setting headers");
 
-    let post = client.request(req).and_then(|res| {
-        res.body().concat2()
-    });
+    let post = client.request(req).and_then(|res| res.body().concat2());
 
     println!("creating post");
 
@@ -293,7 +308,7 @@ fn get_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<String, Box<Error
     let mut current_token = teams_token.lock().expect("Could not lock mutex");
 
     if current_token.expire_date >= Utc::now() {
-        return Ok(current_token.value.clone())
+        return Ok(current_token.value.clone());
     }
 
     let mut core = Core::new()?;
@@ -302,25 +317,29 @@ fn get_bearer_token(teams_token: &Mutex<TeamsToken>) -> Result<String, Box<Error
     let mut req = Request::new(Method::Post, uri);
     let body = "grant_type=client_credentials&client_id=88768615-5b58-4cd2-a6d8-a51bbec10126&client_secret=auajFVRL55[[pylEWN522*!&scope=https%3A%2F%2Fapi.botframework.com%2F.default";
 
-    req.headers_mut().set(header::ContentLength(body.len() as u64));
+    req.headers_mut()
+        .set(header::ContentLength(body.len() as u64));
     req.set_body(body);
 
-    let post = client.request(req).and_then(|res| {
-        res.body().concat2()
-    });
+    let post = client.request(req).and_then(|res| res.body().concat2());
 
     let response: TokenResponse = serde_json::from_slice(&core.run(post)?)?;
 
-    *current_token = TeamsToken { value: response.access_token.clone(), expire_date: Utc::now() + Duration::seconds(response.expires_in as i64) };
+    *current_token = TeamsToken {
+        value: response.access_token.clone(),
+        expire_date: Utc::now() + Duration::seconds(response.expires_in as i64),
+    };
 
     Ok(response.access_token)
 }
 
-fn get_https_client(core: &Core) -> Result<Client<HttpsConnector<client::HttpConnector>>, Box<Error>> {
+fn get_https_client(
+    core: &Core,
+) -> Result<Client<HttpsConnector<client::HttpConnector>>, Box<Error>> {
     let client = ::hyper::Client::configure()
         .connector(::hyper_tls::HttpsConnector::new(4, &core.handle())?)
         .build(&core.handle());
-    
+
     Ok(client)
 }
 
@@ -330,36 +349,144 @@ fn get_deposit_card() -> AttachmentAdaptive {
         content: AdaptiveCard {
             card_type: "AdaptiveCard".to_string(),
             version: "1.0".to_string(),
-            body: vec!(
-                Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Deposit NANO".to_string(), weight: Some("bolder".to_string()), color: None, size: None, spacing: None, horizontal_alignment: None }),
-                Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
-                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Sender".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{sender_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: None })
-                    )},
-                    Column { body_type: "Column".to_string(), width: "auto".to_string(), items: vec!(
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: None }),
-                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://i.imgur.com/6J8tqcM.png".to_string(), size: Some("small".to_string()), spacing: Some("none".to_string()), horizontal_alignment: None })
-                    )},
-                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Receiver".to_string(), weight: None, color: None, size: None, spacing: None, horizontal_alignment: Some("right".to_string()) }),
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{receiver_id}".to_string(), weight: None, color: Some("accent".to_string()), size: Some("large".to_string()), spacing: Some("none".to_string()), horizontal_alignment: Some("right".to_string()) })
-                    )}                    
-                ) }),
-                Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: None, columns: vec!(
-                    Column { body_type: "Column".to_string(), width: "auto".to_string(), items: vec!(
-                        Box::new(ImageBlock { body_type: "Image".to_string(), url: "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={}".to_string(), size: None, spacing: None, horizontal_alignment: Some("center".to_string()) })
-                    )}
-                ) }),
-                Box::new(ColumnSet { body_type: "ColumnSet".to_string(), separator: true, spacing: Some("medium".to_string()), columns: vec!(
-                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "Total".to_string(), weight: None, color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: None })
-                    )},
-                    Column { body_type: "Column".to_string(), width: "1".to_string(), items: vec!(                        
-                        Box::new(TextBlock { body_type: "TextBlock".to_string(), text: "{amount}".to_string(), weight: Some("bolder".to_string()), color: None, size: Some("medium".to_string()), spacing: None, horizontal_alignment: Some("right".to_string()) })
-                    )}
-                ) })
-            )
-        }
+            body: vec![
+                Box::new(TextBlock {
+                    body_type: "TextBlock".to_string(),
+                    text: "Deposit NANO".to_string(),
+                    weight: Some("bolder".to_string()),
+                    color: None,
+                    size: None,
+                    spacing: None,
+                    horizontal_alignment: None,
+                }),
+                Box::new(ColumnSet {
+                    body_type: "ColumnSet".to_string(),
+                    separator: true,
+                    spacing: None,
+                    columns: vec![
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "1".to_string(),
+                            items: vec![
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "Sender".to_string(),
+                                    weight: None,
+                                    color: None,
+                                    size: None,
+                                    spacing: None,
+                                    horizontal_alignment: None,
+                                }),
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "{sender_id}".to_string(),
+                                    weight: None,
+                                    color: Some("accent".to_string()),
+                                    size: Some("large".to_string()),
+                                    spacing: Some("none".to_string()),
+                                    horizontal_alignment: None,
+                                }),
+                            ],
+                        },
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "auto".to_string(),
+                            items: vec![
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "".to_string(),
+                                    weight: None,
+                                    color: None,
+                                    size: None,
+                                    spacing: None,
+                                    horizontal_alignment: None,
+                                }),
+                                Box::new(ImageBlock {
+                                    body_type: "Image".to_string(),
+                                    url: "https://i.imgur.com/6J8tqcM.png".to_string(),
+                                    size: Some("small".to_string()),
+                                    spacing: Some("none".to_string()),
+                                    horizontal_alignment: None,
+                                }),
+                            ],
+                        },
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "1".to_string(),
+                            items: vec![
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "Receiver".to_string(),
+                                    weight: None,
+                                    color: None,
+                                    size: None,
+                                    spacing: None,
+                                    horizontal_alignment: Some("right".to_string()),
+                                }),
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "{receiver_id}".to_string(),
+                                    weight: None,
+                                    color: Some("accent".to_string()),
+                                    size: Some("large".to_string()),
+                                    spacing: Some("none".to_string()),
+                                    horizontal_alignment: Some("right".to_string()),
+                                }),
+                            ],
+                        },
+                    ],
+                }),
+                Box::new(ColumnSet {
+                    body_type: "ColumnSet".to_string(),
+                    separator: true,
+                    spacing: None,
+                    columns: vec![Column {
+                        body_type: "Column".to_string(),
+                        width: "auto".to_string(),
+                        items: vec![Box::new(ImageBlock {
+                            body_type: "Image".to_string(),
+                            url: "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={}"
+                                .to_string(),
+                            size: None,
+                            spacing: None,
+                            horizontal_alignment: Some("center".to_string()),
+                        })],
+                    }],
+                }),
+                Box::new(ColumnSet {
+                    body_type: "ColumnSet".to_string(),
+                    separator: true,
+                    spacing: Some("medium".to_string()),
+                    columns: vec![
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "1".to_string(),
+                            items: vec![Box::new(TextBlock {
+                                body_type: "TextBlock".to_string(),
+                                text: "Total".to_string(),
+                                weight: None,
+                                color: None,
+                                size: Some("medium".to_string()),
+                                spacing: None,
+                                horizontal_alignment: None,
+                            })],
+                        },
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "1".to_string(),
+                            items: vec![Box::new(TextBlock {
+                                body_type: "TextBlock".to_string(),
+                                text: "{amount}".to_string(),
+                                weight: Some("bolder".to_string()),
+                                color: None,
+                                size: Some("medium".to_string()),
+                                spacing: None,
+                                horizontal_alignment: Some("right".to_string()),
+                            })],
+                        },
+                    ],
+                }),
+            ],
+        },
     }
 }

@@ -10,16 +10,16 @@ extern crate serde_json;
 #[macro_use]
 extern crate erased_serde;
 
-extern crate serde;
-extern crate rocket;
-extern crate rocket_contrib;
+extern crate chrono;
 extern crate futures;
 extern crate hyper;
 extern crate hyper_tls;
-extern crate tokio_core;
-extern crate rusqlite;
 extern crate regex;
-extern crate chrono;
+extern crate rocket;
+extern crate rocket_contrib;
+extern crate rusqlite;
+extern crate serde;
+extern crate tokio_core;
 
 mod api;
 mod db;
