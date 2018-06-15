@@ -287,7 +287,7 @@ pub fn handle_message(
             id: activity.from.id,
             name: activity.from.name,
         },
-        attachments: vec![get_deposit_card()],
+        attachments: attachments,
         text: None,
         reply_to_id: activity.id,
     };
