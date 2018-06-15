@@ -1,6 +1,6 @@
 [development]
 address = "127.0.0.1"
-port = 8000
+port = 1337
 # workers = [number of cpus * 2]
 log = "normal"
 # secret_key = [randomly generated at launch]
