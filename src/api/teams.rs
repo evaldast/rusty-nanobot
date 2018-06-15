@@ -1,8 +1,11 @@
 use chrono::{DateTime, Duration, Utc};
+use db;
 use erased_serde;
 use futures::{Future, Stream};
 use hyper::{client, header, Client, Method, Request};
 use hyper_tls::HttpsConnector;
+use node;
+use rusqlite::Connection;
 use serde_json;
 use std::error::Error;
 use std::sync::Mutex;
@@ -243,8 +246,11 @@ struct TokenError {
 pub fn handle_message(
     activity: Activity,
     bearer_token: &Mutex<TeamsToken>,
+    db_conn: &Mutex<Connection>,
 ) -> Result<(), Box<Error>> {
     let token: String = get_bearer_token(bearer_token)?;
+    let account: node::Account = db::get_account_teams(db_conn, &activity.from.id)?;
+    let balance: node::Balance = node::get_balance(account.account)?;
 
     //auajFVRL55[[pylEWN522*!
 
@@ -260,6 +266,12 @@ pub fn handle_message(
     let mut req = Request::new(Method::Post, uri);
 
     println!("creating core and request");
+
+    let attachments: Vec<AttachmentAdaptive> = match activity.text.trim() {
+        "!balance" => vec![get_balance_card(&balance)],
+        "!tip" => vec![get_deposit_card()],
+        _ => return Ok(()),
+    };
 
     let teams_response = TeamsResponseAdaptive {
         response_type: "message".to_string(),
@@ -483,6 +495,95 @@ fn get_deposit_card() -> AttachmentAdaptive {
                                 spacing: None,
                                 horizontal_alignment: Some("right".to_string()),
                             })],
+                        },
+                    ],
+                }),
+            ],
+        },
+    }
+}
+
+fn get_balance_card(balance: &node::Balance) -> AttachmentAdaptive {
+    AttachmentAdaptive {
+        content_type: "application/vnd.microsoft.card.adaptive".to_string(),
+        content: AdaptiveCard {
+            card_type: "AdaptiveCard".to_string(),
+            version: "1.0".to_string(),
+            body: vec![
+                Box::new(TextBlock {
+                    body_type: "TextBlock".to_string(),
+                    text: "NANO Balance".to_string(),
+                    weight: Some("bolder".to_string()),
+                    color: None,
+                    size: None,
+                    spacing: None,
+                    horizontal_alignment: None,
+                }),
+                Box::new(ColumnSet {
+                    body_type: "ColumnSet".to_string(),
+                    separator: true,
+                    spacing: None,
+                    columns: vec![
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "1".to_string(),
+                            items: vec![
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "Current".to_string(),
+                                    weight: None,
+                                    color: None,
+                                    size: None,
+                                    spacing: None,
+                                    horizontal_alignment: None,
+                                }),
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: balance.balance.to_string(),
+                                    weight: None,
+                                    color: Some("accent".to_string()),
+                                    size: Some("large".to_string()),
+                                    spacing: Some("none".to_string()),
+                                    horizontal_alignment: None,
+                                }),
+                            ],
+                        },
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "auto".to_string(),
+                            items: vec![Box::new(TextBlock {
+                                body_type: "TextBlock".to_string(),
+                                text: "".to_string(),
+                                weight: None,
+                                color: None,
+                                size: None,
+                                spacing: None,
+                                horizontal_alignment: None,
+                            })],
+                        },
+                        Column {
+                            body_type: "Column".to_string(),
+                            width: "1".to_string(),
+                            items: vec![
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: "Pending".to_string(),
+                                    weight: None,
+                                    color: None,
+                                    size: None,
+                                    spacing: None,
+                                    horizontal_alignment: Some("right".to_string()),
+                                }),
+                                Box::new(TextBlock {
+                                    body_type: "TextBlock".to_string(),
+                                    text: balance.pending.to_string(),
+                                    weight: None,
+                                    color: Some("accent".to_string()),
+                                    size: Some("large".to_string()),
+                                    spacing: Some("none".to_string()),
+                                    horizontal_alignment: Some("right".to_string()),
+                                }),
+                            ],
                         },
                     ],
                 }),

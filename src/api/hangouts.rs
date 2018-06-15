@@ -367,7 +367,7 @@ fn parse_tip_arguments(text_args: &str) -> Result<(&str, &str), String> {
 }
 
 fn try_get_account(user_email: &str, db_conn: &Mutex<Connection>) -> Result<node::Account, String> {
-    let has_account: bool = match db::get_account(db_conn, user_email) {
+    let has_account: bool = match db::get_account_hangouts(db_conn, user_email) {
         Ok(_) => true,
         Err(_) => false,
     };
@@ -375,7 +375,7 @@ fn try_get_account(user_email: &str, db_conn: &Mutex<Connection>) -> Result<node
     if !has_account {
         return match try_create_account(&user_email, db_conn) {
             "Account has been succesfully created, to check your balance type `!balance`" => {
-                return match db::get_account(db_conn, user_email) {
+                return match db::get_account_hangouts(db_conn, user_email) {
                     Ok(a) => Ok(a),
                     Err(_) => Err("An error has occured".to_string()),
                 }
@@ -384,7 +384,7 @@ fn try_get_account(user_email: &str, db_conn: &Mutex<Connection>) -> Result<node
         };
     };
 
-    match db::get_account(db_conn, user_email) {
+    match db::get_account_hangouts(db_conn, user_email) {
         Ok(a) => Ok(a),
         Err(_) => Err("An error has occured".to_string()),
     }
@@ -402,7 +402,7 @@ fn try_create_account(user_email: &str, db_conn: &Mutex<Connection>) -> &'static
     };
 
     match node::add_key_to_wallet(&wallet.wallet, &key.private) {
-        Ok(_) => match db::add_account(db_conn, &key, user_email, &wallet.wallet) {
+        Ok(_) => match db::add_account_hangouts(db_conn, &key, user_email, &wallet.wallet) {
             Ok(_) => "Account has been succesfully created, to check your balance type `!balance`",
             Err(_) => "An error has occured attempting to create an account",
         },

@@ -16,10 +16,14 @@ fn hangouts(
 }
 
 #[post("/teams", format = "application/json", data = "<activity>")]
-fn teams(activity: Json<teams::Activity>, bearer_token: State<Mutex<teams::TeamsToken>>) {
+fn teams(
+    activity: Json<teams::Activity>,
+    bearer_token: State<Mutex<teams::TeamsToken>>,
+    db_conn: State<Mutex<Connection>>,
+) {
     println!("{:?}", activity.0);
 
-    match teams::handle_message(activity.0, &bearer_token) {
+    match teams::handle_message(activity.0, &bearer_token, &db_conn) {
         Ok(_) => println!("Teams success"),
         Err(err) => println!("{}", err),
     }

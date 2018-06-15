@@ -16,6 +16,9 @@ pub struct Account {
 
     #[serde(default)]
     pub email: String,
+
+    #[serde(default)]
+    pub teams_id: String,
 }
 
 #[derive(Deserialize)]
